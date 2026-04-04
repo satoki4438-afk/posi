@@ -186,7 +186,7 @@ export default function FeedPage() {
               </div>
 
               <div style={S.textCard}>
-                <p style={S.postText}>{post.text}</p>
+                <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
               </div>
 
               {post.photo && (
@@ -263,8 +263,8 @@ const S = {
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: 14, padding: '12px 14px', flexShrink: 0, overflow: 'hidden', alignItems: 'flex-start' },
-  postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)' },
+  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: 14, padding: '12px 14px', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
   photoWrap: { height: '28vh', borderRadius: 14, overflow: 'hidden', flexShrink: 0 },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
