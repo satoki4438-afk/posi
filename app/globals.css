@@ -1,9 +1,12 @@
 :root {
+  --orange: #FF6B35;
+  --orange-tint: #fff3ee;
+  --orange-border: #ffd0bb;
   --primary: #7C5CBF;
   --primary-light: #9B7DD4;
   --primary-tint: #f0eaff;
   --bg: #F5F5F0;
-  --bg-posi: #ece8f8;
+  --bg-posi: #fff3ee;
   --card-bg: #ffffff;
   --card-border: rgba(0, 0, 0, 0.08);
   --text: #1a1a2e;
