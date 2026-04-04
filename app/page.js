@@ -258,8 +258,8 @@ const S = {
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', flexDirection: 'column', cursor: 'grab', willChange: 'transform' },
-  cardArea: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', minHeight: 0 },
-  fixedCard: { height: '70vh', width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0 8px', overflow: 'hidden' },
+  cardArea: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px', minHeight: 0 },
+  fixedCard: { height: '90vh', width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0 8px', overflow: 'hidden' },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
