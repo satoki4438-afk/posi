@@ -280,14 +280,14 @@ export default function FeedPage() {
               </div>
 
               <div style={S.contentBlock}>
-                <div style={S.textCard}>
-                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
-                </div>
                 {post.photo && (
                   <div style={S.photoWrap}>
                     <img src={post.photo} alt="" style={S.photo} draggable={false} />
                   </div>
                 )}
+                <div style={S.textCard}>
+                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+                </div>
               </div>
 
               <div style={{ flex: 1 }} />
@@ -356,9 +356,9 @@ const S = {
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
   contentBlock: { flexShrink: 0, display: 'flex', flexDirection: 'column' },
-  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: '14px 14px 0 0', padding: '12px 14px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: '0 0 14px 14px', padding: '12px 14px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
-  photoWrap: { height: '28vh', borderRadius: '0 0 14px 14px', overflow: 'hidden' },
+  photoWrap: { height: '28vh', borderRadius: '14px 14px 0 0', overflow: 'hidden' },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
   floatingEmoji: { position: 'absolute', bottom: 90, left: '50%', fontSize: 40, zIndex: 10, pointerEvents: 'none' },
 
