@@ -256,7 +256,7 @@ const S = {
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', willChange: 'transform' },
-  card: { height: '90vh', width: 'calc(100% - 16px)', display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', background: 'var(--card-bg)', borderRadius: 20, boxShadow: '0 4px 24px rgba(255,107,53,0.10)', overflow: 'hidden' },
+  card: { height: '90vh', width: 'calc(100% - 16px)', display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', background: 'var(--card-bg)', borderRadius: 20, boxShadow: '0 4px 24px rgba(255,107,53,0.10)', overflow: 'hidden', marginTop: 12, marginBottom: 12 },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
