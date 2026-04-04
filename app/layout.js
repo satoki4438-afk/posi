@@ -8,7 +8,7 @@ const noto = Noto_Sans_JP({
 })
 
 export const metadata = {
-  title: 'Posi',
+  title: 'POSI.',
   description: 'ポジティブな達成を祝い合うSNS',
 }
 
