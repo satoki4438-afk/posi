@@ -268,7 +268,7 @@ const S = {
 
   cardMiddle: { flex: 1, overflow: 'hidden', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 },
   postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)', flexShrink: 0 },
-  photoWrap: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 0 },
+  photoWrap: { borderRadius: 16, overflow: 'hidden', flexShrink: 0, height: '45vw', maxHeight: '45vh' },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
   cardBottom: { padding: '0 16px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 },
