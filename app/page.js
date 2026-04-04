@@ -188,10 +188,6 @@ export default function FeedPage() {
     <div style={S.root}>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button style={S.headerIconBtn} onClick={() => setActiveTab('notif')}>🔔</button>
-          <button style={S.headerIconBtn} onClick={() => setActiveTab('profile')}>👤</button>
-        </div>
       </header>
 
       <main
@@ -345,8 +341,7 @@ export default function FeedPage() {
 
 const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
-  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--orange)', flexShrink: 0 },
-  headerIconBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#fff', padding: 4 },
+  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
 
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
