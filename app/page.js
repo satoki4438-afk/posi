@@ -6,11 +6,21 @@ const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
 
 const MOCK_POSTS = [
-  { id: '1', author: 'たろう', initials: 'た', text: '今日マラソン完走した！初めての10km！', posiCount: 847, target: 1000, time: '2分前' },
-  { id: '2', author: 'はなこ', initials: 'は', text: 'TOEIC 900点超えた。3年間の勉強がついに実った！', posiCount: 234, target: 1000, time: '15分前' },
-  { id: '3', author: 'けんじ', initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ', posiCount: 992, target: 1000, time: '1時間前' },
-  { id: '4', author: 'みさき', initials: 'み', text: '子供が初めて自転車に乗れた！1週間の練習の成果', posiCount: 156, target: 1000, time: '2時間前' },
-  { id: '5', author: 'ゆうき', initials: 'ゆ', text: '独学3ヶ月でWebアプリ完成させた。ついにリリースできた！', posiCount: 421, target: 1000, time: '3時間前' },
+  { id: '1',  author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                         posiCount: 847, target: 1000, time: '2分前' },
+  { id: '2',  author: 'はなこ',   initials: 'は', text: 'TOEIC 900点超えた。3年間の勉強がついに実った！',               posiCount: 234, target: 1000, time: '15分前' },
+  { id: '3',  author: 'けんじ',   initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ',           posiCount: 992, target: 1000, time: '1時間前' },
+  { id: '4',  author: 'みさき',   initials: 'み', text: '子供が初めて自転車に乗れた！1週間の練習の成果',               posiCount: 156, target: 1000, time: '2時間前' },
+  { id: '5',  author: 'ゆうき',   initials: 'ゆ', text: '独学3ヶ月でWebアプリ完成させた。ついにリリースできた！',       posiCount: 421, target: 1000, time: '3時間前' },
+  { id: '6',  author: 'りょうた', initials: 'り', text: 'ベンチプレス100kg達成！1年半かかったけどやっと三桁！',         posiCount: 763, target: 1000, time: '5分前' },
+  { id: '7',  author: 'あやか',   initials: 'あ', text: '簿記2級、一発合格した！毎朝5時起きで勉強した甲斐があった',     posiCount: 88,  target: 1000, time: '32分前' },
+  { id: '8',  author: 'だいき',   initials: 'だ', text: '初めての営業で契約取れた！断られ続けて2ヶ月、ようやく',       posiCount: 519, target: 1000, time: '45分前' },
+  { id: '9',  author: 'なつみ',   initials: 'な', text: '毎日続けてた日記、今日でちょうど1年になった📖',               posiCount: 302, target: 1000, time: '1時間前' },
+  { id: '10', author: 'しょうた', initials: 'し', text: 'スクワット自重100回、ノンストップでできた！半年前は30回だった', posiCount: 671, target: 1000, time: '2時間前' },
+  { id: '11', author: 'まい',     initials: 'ま', text: '転職活動、内定もらえた！希望の会社に行けます',                 posiCount: 950, target: 1000, time: '2時間前' },
+  { id: '12', author: 'こうへい', initials: 'こ', text: '子供と一緒に作った工作、学校で金賞取れた！',                   posiCount: 137, target: 1000, time: '3時間前' },
+  { id: '13', author: 'えり',     initials: 'え', text: 'ランニング累計500km達成。毎朝コツコツ積み上げた結果',           posiCount: 408, target: 1000, time: '4時間前' },
+  { id: '14', author: 'とも',     initials: 'と', text: '苦手だった英語の発表、今日は震えなかった。小さな一歩',         posiCount: 54,  target: 1000, time: '5時間前' },
+  { id: '15', author: 'かずや',   initials: 'か', text: 'フリーランス1年目の確定申告、自力で乗り越えた！',             posiCount: 829, target: 1000, time: '6時間前' },
 ]
 
 const USER_TIER = 'free'
