@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '🥹', '🎊', '🌈']
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
@@ -45,9 +45,16 @@ export default function FeedPage() {
   const [leaving, setLeaving] = useState(null)
   const [activeTab, setActiveTab] = useState('home')
   const [popping, setPopping] = useState(false)
+  const [wobble, setWobble] = useState(true)
+  const [floatingEmojis, setFloatingEmojis] = useState([])
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setWobble(false), 1500)
+    return () => clearTimeout(t)
+  }, [])
 
   const post = posts[idx] ?? null
 
@@ -89,6 +96,9 @@ export default function FeedPage() {
     if (!post || sent[post.id]) return
     setPopping(true)
     setTimeout(() => setPopping(false), 380)
+    const fid = Date.now()
+    setFloatingEmojis(es => [...es, { id: fid, e: emoji }])
+    setTimeout(() => setFloatingEmojis(es => es.filter(fe => fe.id !== fid)), 800)
     setSent(s => ({ ...s, [post.id]: true }))
     setPosts(ps => ps.map(p =>
       p.id === post.id ? { ...p, posiCount: Math.min(p.posiCount + 1, p.target) } : p
@@ -128,18 +138,21 @@ export default function FeedPage() {
   const hasSent = post ? !!sent[post.id] : false
   const emojis = USER_TIER === 'premium' ? EMOJIS : USER_TIER === 'free' ? EMOJIS_FREE : ['👍']
 
+  const isWobbling = wobble && !drag.on && !leaving
   let cardTransform = 'translateX(0) rotate(0deg)'
   let cardTransition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)'
 
-  if (leaving === 'left') {
-    cardTransform = 'translateX(-120vw) rotate(-22deg)'
-    cardTransition = 'transform 0.3s ease-in'
-  } else if (leaving === 'right') {
-    cardTransform = 'translateX(120vw) rotate(22deg)'
-    cardTransition = 'transform 0.3s ease-in'
-  } else if (drag.on && Math.abs(drag.dx) > 6) {
-    cardTransform = `translateX(${drag.dx}px) rotate(${drag.dx * 0.03}deg)`
-    cardTransition = 'none'
+  if (!isWobbling) {
+    if (leaving === 'left') {
+      cardTransform = 'translateX(-120vw) rotate(-22deg)'
+      cardTransition = 'transform 0.3s ease-in'
+    } else if (leaving === 'right') {
+      cardTransform = 'translateX(120vw) rotate(22deg)'
+      cardTransition = 'transform 0.3s ease-in'
+    } else if (drag.on && Math.abs(drag.dx) > 6) {
+      cardTransform = `translateX(${drag.dx}px) rotate(${drag.dx * 0.03}deg)`
+      cardTransition = 'none'
+    }
   }
 
   const navTab = (tab, icon) => (
@@ -172,10 +185,15 @@ export default function FeedPage() {
           </div>
         ) : (
           <div
-            style={{ ...S.screen, transform: cardTransform, transition: cardTransition }}
-            onMouseDown={e => dragStart(e.clientX)}
-            onTouchStart={e => dragStart(e.touches[0].clientX)}
+            className={isWobbling ? 'card-wobble' : ''}
+            style={{ ...S.screen, ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
+            onMouseDown={e => { setWobble(false); dragStart(e.clientX) }}
+            onTouchStart={e => { setWobble(false); dragStart(e.touches[0].clientX) }}
           >
+            {floatingEmojis.map(fe => (
+              <div key={fe.id} className="emoji-fly" style={S.floatingEmoji}>{fe.e}</div>
+            ))}
+
             <div style={S.card}>
               <div style={S.authorRow}>
                 <div style={S.avatar}>{post.initials}</div>
@@ -185,23 +203,21 @@ export default function FeedPage() {
                 </div>
               </div>
 
-              <div style={S.textCard}>
-                <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
-              </div>
-
-              {post.photo && (
-                <div style={S.photoWrap}>
-                  <img src={post.photo} alt="" style={S.photo} draggable={false} />
+              <div style={S.contentBlock}>
+                <div style={S.textCard}>
+                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
                 </div>
-              )}
+                {post.photo && (
+                  <div style={S.photoWrap}>
+                    <img src={post.photo} alt="" style={S.photo} draggable={false} />
+                  </div>
+                )}
+              </div>
 
               <div style={{ flex: 1 }} />
 
               <div style={S.indicator}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={S.indicatorLabel}>🎆 花火まであと{remaining.toLocaleString()}</span>
-                  <span style={S.indicatorCount}>{post.posiCount.toLocaleString()} / {post.target.toLocaleString()}</span>
-                </div>
+                <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
                 <div style={S.bar}>
                   <div style={{ ...S.barFill, width: `${progress}%` }} />
                 </div>
@@ -263,10 +279,12 @@ const S = {
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: 14, padding: '12px 14px', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  contentBlock: { flexShrink: 0, display: 'flex', flexDirection: 'column' },
+  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: '14px 14px 0 0', padding: '12px 14px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
-  photoWrap: { height: '28vh', borderRadius: 14, overflow: 'hidden', flexShrink: 0 },
+  photoWrap: { height: '28vh', borderRadius: '0 0 14px 14px', overflow: 'hidden' },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+  floatingEmoji: { position: 'absolute', bottom: 90, left: '50%', fontSize: 40, zIndex: 10, pointerEvents: 'none' },
 
   indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '16px 20px', border: '0.5px solid var(--orange-border)', flexShrink: 0 },
   indicatorLabel: { fontSize: 22, color: 'var(--orange)', fontWeight: 700 },
@@ -274,7 +292,7 @@ const S = {
   bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', background: 'var(--orange)', borderRadius: 99, transition: 'width 0.3s ease' },
 
-  posiBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '15px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(255,107,53,0.4)', letterSpacing: '0.5px' },
+  posiBtn: { width: '100%', background: 'var(--orange-dark)', border: 'none', borderRadius: 9999, padding: '15px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(217,79,26,0.45)', letterSpacing: '0.5px' },
   posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },
