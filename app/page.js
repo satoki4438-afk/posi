@@ -177,26 +177,25 @@ export default function FeedPage() {
               onMouseDown={e => dragStart(e.clientX)}
               onTouchStart={e => dragStart(e.touches[0].clientX)}
             >
-              <div style={{ ...S.contentArea, justifyContent: post.photo ? 'flex-start' : 'center' }}>
-                <div style={S.authorRow}>
-                  <div style={S.avatar}>{post.initials}</div>
-                  <div>
-                    <div style={S.authorName}>{post.author}</div>
-                    <div style={S.authorTime}>{post.time}</div>
+              <div style={S.cardArea}>
+                <div style={{ ...S.fixedCard, justifyContent: post.photo ? 'flex-start' : 'center' }}>
+                  <div style={S.authorRow}>
+                    <div style={S.avatar}>{post.initials}</div>
+                    <div>
+                      <div style={S.authorName}>{post.author}</div>
+                      <div style={S.authorTime}>{post.time}</div>
+                    </div>
                   </div>
-                </div>
-                <div style={S.textCard}>
-                  <p style={S.postText}>{post.text}</p>
+                  <div style={S.textCard}>
+                    <p style={S.postText}>{post.text}</p>
+                  </div>
+                  {post.photo && (
+                    <div style={S.photoWrap}>
+                      <img src={post.photo} alt="" style={S.photo} draggable={false} />
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {post.photo && (
-                <div style={{ padding: '12px 16px 0', flexShrink: 0 }}>
-                  <div style={S.photoWrap}>
-                    <img src={post.photo} alt="" style={S.photo} draggable={false} />
-                  </div>
-                </div>
-              )}
 
               <div style={S.cardBottom}>
                 <div style={S.indicator}>
@@ -259,7 +258,8 @@ const S = {
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', flexDirection: 'column', cursor: 'grab', willChange: 'transform' },
-  contentArea: { flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 16px 0', gap: 12, minHeight: 0, overflow: 'hidden' },
+  cardArea: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', minHeight: 0 },
+  fixedCard: { height: '70vh', width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0 8px', overflow: 'hidden' },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
@@ -268,7 +268,7 @@ const S = {
 
   textCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', flexShrink: 0 },
   postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)' },
-  photoWrap: { borderRadius: 16, overflow: 'hidden', flexShrink: 0, height: '45vw', maxHeight: '45vh' },
+  photoWrap: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 0 },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
   cardBottom: { padding: '0 16px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 },
