@@ -171,68 +171,66 @@ export default function FeedPage() {
             <p style={{ fontSize: 15, color: 'var(--text-sub)' }}>全部見たよ！また後でチェックしよう</p>
           </div>
         ) : (
-          <>
-            <div
-              style={{ ...S.screen, transform: cardTransform, transition: cardTransition }}
-              onMouseDown={e => dragStart(e.clientX)}
-              onTouchStart={e => dragStart(e.touches[0].clientX)}
-            >
-              <div style={S.cardArea}>
-                <div style={{ ...S.fixedCard, justifyContent: post.photo ? 'flex-start' : 'center' }}>
-                  <div style={S.authorRow}>
-                    <div style={S.avatar}>{post.initials}</div>
-                    <div>
-                      <div style={S.authorName}>{post.author}</div>
-                      <div style={S.authorTime}>{post.time}</div>
-                    </div>
-                  </div>
-                  <div style={S.textCard}>
-                    <p style={S.postText}>{post.text}</p>
-                  </div>
-                  {post.photo && (
-                    <div style={S.photoWrap}>
-                      <img src={post.photo} alt="" style={S.photo} draggable={false} />
-                    </div>
-                  )}
+          <div
+            style={{ ...S.screen, transform: cardTransform, transition: cardTransition }}
+            onMouseDown={e => dragStart(e.clientX)}
+            onTouchStart={e => dragStart(e.touches[0].clientX)}
+          >
+            <div style={S.card}>
+              <div style={S.authorRow}>
+                <div style={S.avatar}>{post.initials}</div>
+                <div>
+                  <div style={S.authorName}>{post.author}</div>
+                  <div style={S.authorTime}>{post.time}</div>
                 </div>
               </div>
 
-              <div style={S.cardBottom}>
-                <div style={S.indicator}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <span style={S.indicatorLabel}>🎆 花火まであと{remaining.toLocaleString()}</span>
-                    <span style={S.indicatorCount}>{post.posiCount.toLocaleString()} / {post.target.toLocaleString()}</span>
-                  </div>
-                  <div style={S.bar}>
-                    <div style={{ ...S.barFill, width: `${progress}%` }} />
-                  </div>
-                </div>
+              <div style={S.textCard}>
+                <p style={S.postText}>{post.text}</p>
+              </div>
 
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className={popping ? 'posi-pop' : ''}
-                    style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
-                    onMouseDown={posiDown}
-                    onMouseUp={posiUp}
-                    onTouchStart={posiDown}
-                    onTouchEnd={posiUp}
-                  >
-                    <span style={{ fontSize: 20 }}>{emoji}</span>
-                    <span>POSI.</span>
-                    <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
-                  </button>
-
-                  {pickerOpen && (
-                    <div style={S.picker}>
-                      {emojis.map(e => (
-                        <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
-                      ))}
-                    </div>
-                  )}
+              {post.photo && (
+                <div style={S.photoWrap}>
+                  <img src={post.photo} alt="" style={S.photo} draggable={false} />
                 </div>
+              )}
+
+              <div style={{ flex: 1 }} />
+
+              <div style={S.indicator}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={S.indicatorLabel}>🎆 花火まであと{remaining.toLocaleString()}</span>
+                  <span style={S.indicatorCount}>{post.posiCount.toLocaleString()} / {post.target.toLocaleString()}</span>
+                </div>
+                <div style={S.bar}>
+                  <div style={{ ...S.barFill, width: `${progress}%` }} />
+                </div>
+              </div>
+
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                  className={popping ? 'posi-pop' : ''}
+                  style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
+                  onMouseDown={posiDown}
+                  onMouseUp={posiUp}
+                  onTouchStart={posiDown}
+                  onTouchEnd={posiUp}
+                >
+                  <span style={{ fontSize: 20 }}>{emoji}</span>
+                  <span>POSI.</span>
+                  <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
+                </button>
+
+                {pickerOpen && (
+                  <div style={S.picker}>
+                    {emojis.map(e => (
+                      <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
 
@@ -257,22 +255,20 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', flexDirection: 'column', cursor: 'grab', willChange: 'transform' },
-  cardArea: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px', minHeight: 0 },
-  fixedCard: { height: '90vh', width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0 8px', overflow: 'hidden' },
+  screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', willChange: 'transform' },
+  card: { height: '90vh', width: 'calc(100% - 16px)', display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', background: 'var(--card-bg)', borderRadius: 20, boxShadow: '0 4px 24px rgba(255,107,53,0.10)', overflow: 'hidden' },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  textCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', flexShrink: 0 },
+  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: 14, padding: '12px 14px', flexShrink: 0, overflow: 'hidden', alignItems: 'flex-start' },
   postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)' },
-  photoWrap: { height: '45vw', maxHeight: '45vh', borderRadius: 16, overflow: 'hidden', flexShrink: 0 },
+  photoWrap: { height: '28vh', borderRadius: 14, overflow: 'hidden', flexShrink: 0 },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
-  cardBottom: { padding: '0 16px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 },
-  indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '8px 12px', border: '0.5px solid var(--orange-border)' },
+  indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '8px 12px', border: '0.5px solid var(--orange-border)', flexShrink: 0 },
   indicatorLabel: { fontSize: 11, color: 'var(--orange)', fontWeight: 700 },
   indicatorCount: { fontSize: 11, color: 'var(--text-sub)' },
   bar: { height: 3, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
