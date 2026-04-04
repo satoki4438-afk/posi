@@ -1,0 +1,39 @@
+:root {
+  --primary: #5a4fc2;
+  --primary-light: #7c6fd4;
+  --primary-tint: #f0eeff;
+  --bg: #fafaf7;
+  --bg-posi: #f5f3ff;
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+  --text: #1a1a2e;
+  --text-sub: #6b6b80;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f14;
+    --card-bg: #1a1a24;
+    --card-border: #2a2a35;
+    --primary-tint: #1e1a3a;
+    --bg-posi: #1a1630;
+    --text: #f0f0f5;
+    --text-sub: #8888a0;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
