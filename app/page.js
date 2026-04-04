@@ -268,7 +268,7 @@ const S = {
 
   textCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', flexShrink: 0 },
   postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)' },
-  photoWrap: { flex: 1, borderRadius: 16, overflow: 'hidden', minHeight: 0 },
+  photoWrap: { height: '45vw', maxHeight: '45vh', borderRadius: 16, overflow: 'hidden', flexShrink: 0 },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
   cardBottom: { padding: '0 16px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 },
