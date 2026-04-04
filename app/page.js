@@ -223,7 +223,7 @@ const S = {
   indicatorCount: { fontSize: 11, color: 'var(--text-sub)' },
   bar: { height: 3, background: 'rgba(90,79,194,0.15)', borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', background: 'var(--primary-light)', borderRadius: 99, transition: 'width 0.3s ease' },
-  posiBtn: { background: 'var(--primary-tint)', border: '0.5px solid #c5bcf0', borderRadius: 9999, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' },
+  posiBtn: { background: 'var(--primary-tint)', border: '0.5px solid #b8a0e0', borderRadius: 9999, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' },
   posiBtnSent: { background: 'var(--primary)', borderColor: 'transparent', color: '#fff', cursor: 'default' },
   picker: { position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', userSelect: 'none' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },

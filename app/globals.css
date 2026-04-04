@@ -1,25 +1,13 @@
 :root {
-  --primary: #5a4fc2;
-  --primary-light: #7c6fd4;
-  --primary-tint: #f0eeff;
-  --bg: #fafaf7;
-  --bg-posi: #f5f3ff;
+  --primary: #7C5CBF;
+  --primary-light: #9B7DD4;
+  --primary-tint: #f0eaff;
+  --bg: #F5F5F0;
+  --bg-posi: #ece8f8;
   --card-bg: #ffffff;
   --card-border: rgba(0, 0, 0, 0.08);
   --text: #1a1a2e;
   --text-sub: #6b6b80;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f0f14;
-    --card-bg: #1a1a24;
-    --card-border: #2a2a35;
-    --primary-tint: #1e1a3a;
-    --bg-posi: #1a1630;
-    --text: #f0f0f5;
-    --text-sub: #8888a0;
-  }
 }
 
 *,
