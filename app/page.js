@@ -309,41 +309,37 @@ export default function FeedPage() {
       </main>
 
       {activeTab === 'home' && post && (
-        <>
-          <div style={S.indicatorOuter}>
-            <div style={S.indicator}>
-              <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
-              <div style={S.bar}>
-                <div style={{ ...S.barFill, width: `${progress}%` }} />
+        <div style={S.bottomFixed}>
+          <div style={S.indicator}>
+            <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
+            <div style={S.bar}>
+              <div style={{ ...S.barFill, width: `${progress}%` }} />
+            </div>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button
+              className={popping ? 'posi-pop' : ''}
+              style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
+              onMouseDown={posiDown}
+              onMouseUp={posiUp}
+              onTouchStart={posiDown}
+              onTouchEnd={posiUp}
+            >
+              <span style={{ fontSize: 20 }}>{emoji}</span>
+              <span>POSI.</span>
+              <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
+            </button>
+
+            {pickerOpen && (
+              <div style={S.picker}>
+                {emojis.map(e => (
+                  <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
-
-          <div style={S.posiOuter}>
-            <div style={{ position: 'relative' }}>
-              <button
-                className={popping ? 'posi-pop' : ''}
-                style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
-                onMouseDown={posiDown}
-                onMouseUp={posiUp}
-                onTouchStart={posiDown}
-                onTouchEnd={posiUp}
-              >
-                <span style={{ fontSize: 20 }}>{emoji}</span>
-                <span>POSI.</span>
-                <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
-              </button>
-
-              {pickerOpen && (
-                <div style={S.picker}>
-                  {emojis.map(e => (
-                    <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       <nav style={S.nav}>
@@ -367,9 +363,9 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', willChange: 'transform' },
+  screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform' },
 
-  cardGroup: { display: 'flex', flexDirection: 'column', gap: 8, width: 'calc(100% - 32px)' },
+  cardGroup: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column', gap: 8 },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
@@ -384,13 +380,12 @@ const S = {
 
   floatingEmoji: { position: 'absolute', bottom: 90, left: '50%', fontSize: 40, zIndex: 10, pointerEvents: 'none' },
 
-  indicatorOuter: { padding: '0 16px 8px', flexShrink: 0 },
+  bottomFixed: { position: 'fixed', bottom: 64, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 20 },
   indicator: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 16px' },
   indicatorLabel: { fontSize: 15, color: 'var(--orange)', fontWeight: 700 },
   bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', background: 'var(--orange)', borderRadius: 99, transition: 'width 0.3s ease' },
 
-  posiOuter: { padding: '0 16px 12px', flexShrink: 0 },
   posiBtn: { width: '100%', background: 'var(--orange-dark)', border: 'none', borderRadius: 9999, padding: '15px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(217,79,26,0.45)', letterSpacing: '0.5px' },
   posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
