@@ -172,31 +172,31 @@ export default function FeedPage() {
           </div>
         ) : (
           <>
-            {idx + 1 < posts.length && (
-              <div style={S.cardBehind} />
-            )}
-
             <div
-              style={{ ...S.card, transform: cardTransform, transition: cardTransition }}
+              style={{ ...S.screen, transform: cardTransform, transition: cardTransition }}
               onMouseDown={e => dragStart(e.clientX)}
               onTouchStart={e => dragStart(e.touches[0].clientX)}
             >
-              <div style={S.cardTop}>
-                <div style={S.avatar}>{post.initials}</div>
-                <div>
-                  <div style={S.authorName}>{post.author}</div>
-                  <div style={S.authorTime}>{post.time}</div>
+              <div style={{ ...S.contentArea, justifyContent: post.photo ? 'flex-start' : 'center' }}>
+                <div style={S.authorRow}>
+                  <div style={S.avatar}>{post.initials}</div>
+                  <div>
+                    <div style={S.authorName}>{post.author}</div>
+                    <div style={S.authorTime}>{post.time}</div>
+                  </div>
+                </div>
+                <div style={S.textCard}>
+                  <p style={S.postText}>{post.text}</p>
                 </div>
               </div>
 
-              <div style={S.cardMiddle}>
-                <p style={S.postText}>{post.text}</p>
-                {post.photo && (
+              {post.photo && (
+                <div style={{ padding: '12px 16px 0', flexShrink: 0 }}>
                   <div style={S.photoWrap}>
                     <img src={post.photo} alt="" style={S.photo} draggable={false} />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div style={S.cardBottom}>
                 <div style={S.indicator}>
@@ -258,16 +258,16 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  cardBehind: { position: 'absolute', inset: '6px 4px 0', background: 'var(--card-bg)', borderRadius: '20px 20px 0 0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', zIndex: 0 },
-  card: { position: 'absolute', inset: 0, background: 'var(--card-bg)', zIndex: 1, display: 'flex', flexDirection: 'column', cursor: 'grab', willChange: 'transform', boxShadow: '0 4px 24px rgba(255,107,53,0.08)' },
+  screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', flexDirection: 'column', cursor: 'grab', willChange: 'transform' },
+  contentArea: { flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 16px 0', gap: 12, minHeight: 0, overflow: 'hidden' },
 
-  cardTop: { display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 10px', flexShrink: 0 },
+  authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  cardMiddle: { flex: 1, overflow: 'hidden', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 },
-  postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)', flexShrink: 0 },
+  textCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)', flexShrink: 0 },
+  postText: { fontSize: 17, fontWeight: 600, lineHeight: 1.65, color: 'var(--text)' },
   photoWrap: { borderRadius: 16, overflow: 'hidden', flexShrink: 0, height: '45vw', maxHeight: '45vh' },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
