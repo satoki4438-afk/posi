@@ -244,12 +244,14 @@ export default function FeedPage() {
       </main>
 
       <nav style={S.nav}>
-        <button style={{ ...S.navBtn, ...(activeTab === 'home' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('home')}>🏠</button>
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+          <button style={{ ...S.navBtn, ...(activeTab === 'home' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('home')}>🏠</button>
+        </div>
         <button style={S.postBtn}>＋</button>
-        <div style={{ flex: 1 }} />
-        <button style={{ ...S.navBtn, ...(activeTab === 'notif' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('notif')}>🔔</button>
-        <button style={{ ...S.navBtn, ...(activeTab === 'profile' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('profile')}>👤</button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <button style={{ ...S.navBtn, ...(activeTab === 'notif' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('notif')}>🔔</button>
+          <button style={{ ...S.navBtn, ...(activeTab === 'profile' ? S.navBtnActive : {}) }} onClick={() => setActiveTab('profile')}>👤</button>
+        </div>
       </nav>
     </div>
   )
