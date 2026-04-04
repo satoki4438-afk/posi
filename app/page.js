@@ -53,6 +53,16 @@ const MOCK_PROFILE = {
   ],
 }
 
+const BG_PATTERNS = [
+  { background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', emoji: '🌿' },
+  { background: 'linear-gradient(135deg, #bbdefb, #90caf9)', emoji: '🌊' },
+  { background: 'linear-gradient(135deg, #f8bbd0, #f48fb1)', emoji: '🌸' },
+  { background: 'linear-gradient(135deg, #fff9c4, #fff176)', emoji: '☀️' },
+  { background: 'linear-gradient(135deg, #e1bee7, #ce93d8)', emoji: '🌙' },
+]
+
+const getPattern = (id) => BG_PATTERNS[parseInt(id, 10) % BG_PATTERNS.length]
+
 export default function FeedPage() {
   const [posts, setPosts] = useState(MOCK_POSTS)
   const [idx, setIdx] = useState(0)
@@ -270,7 +280,7 @@ export default function FeedPage() {
               <div key={fe.id} className="emoji-fly" style={S.floatingEmoji}>{fe.e}</div>
             ))}
 
-            <div style={S.card}>
+            <div style={S.cardGroup}>
               <div style={S.authorRow}>
                 <div style={S.avatar}>{post.initials}</div>
                 <div>
@@ -279,52 +289,62 @@ export default function FeedPage() {
                 </div>
               </div>
 
-              <div style={S.contentBlock}>
-                {post.photo && (
-                  <div style={S.photoWrap}>
+              <div style={S.mainCard}>
+                {post.photo ? (
+                  <div style={S.photoArea}>
                     <img src={post.photo} alt="" style={S.photo} draggable={false} />
                   </div>
-                )}
-                <div style={S.textCard}>
-                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
-                </div>
-              </div>
-
-              <div style={{ flex: 1 }} />
-
-              <div style={S.indicator}>
-                <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
-                <div style={S.bar}>
-                  <div style={{ ...S.barFill, width: `${progress}%` }} />
-                </div>
-              </div>
-
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <button
-                  className={popping ? 'posi-pop' : ''}
-                  style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
-                  onMouseDown={posiDown}
-                  onMouseUp={posiUp}
-                  onTouchStart={posiDown}
-                  onTouchEnd={posiUp}
-                >
-                  <span style={{ fontSize: 20 }}>{emoji}</span>
-                  <span>POSI.</span>
-                  <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
-                </button>
-
-                {pickerOpen && (
-                  <div style={S.picker}>
-                    {emojis.map(e => (
-                      <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
-                    ))}
+                ) : (
+                  <div style={{ ...S.photoArea, ...{ background: getPattern(post.id).background }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
                   </div>
                 )}
+                <div style={S.textArea}>
+                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+                </div>
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {activeTab === 'home' && post && (
+        <>
+          <div style={S.indicatorOuter}>
+            <div style={S.indicator}>
+              <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
+              <div style={S.bar}>
+                <div style={{ ...S.barFill, width: `${progress}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={S.posiOuter}>
+            <div style={{ position: 'relative' }}>
+              <button
+                className={popping ? 'posi-pop' : ''}
+                style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
+                onMouseDown={posiDown}
+                onMouseUp={posiUp}
+                onTouchStart={posiDown}
+                onTouchEnd={posiUp}
+              >
+                <span style={{ fontSize: 20 }}>{emoji}</span>
+                <span>POSI.</span>
+                <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
+              </button>
+
+              {pickerOpen && (
+                <div style={S.picker}>
+                  {emojis.map(e => (
+                    <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       <nav style={S.nav}>
         {navTab('home', '🏠')}
@@ -348,26 +368,29 @@ const S = {
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'grab', willChange: 'transform' },
-  card: { height: '90vh', width: 'calc(100% - 16px)', display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', background: 'var(--card-bg)', borderRadius: 20, boxShadow: '0 4px 24px rgba(255,107,53,0.10)', overflow: 'hidden', marginTop: 12, marginBottom: 12 },
+
+  cardGroup: { display: 'flex', flexDirection: 'column', gap: 8, width: 'calc(100% - 32px)' },
 
   authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  contentBlock: { flexShrink: 0, display: 'flex', flexDirection: 'column' },
-  textCard: { height: '28vh', background: 'var(--bg)', borderRadius: '0 0 14px 14px', padding: '12px 14px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
-  photoWrap: { height: '28vh', borderRadius: '14px 14px 0 0', overflow: 'hidden' },
+  mainCard: { borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
+  photoArea: { height: 200, overflow: 'hidden' },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+  textArea: { background: '#fff', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
+
   floatingEmoji: { position: 'absolute', bottom: 90, left: '50%', fontSize: 40, zIndex: 10, pointerEvents: 'none' },
 
-  indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '16px 20px', border: '0.5px solid var(--orange-border)', flexShrink: 0 },
-  indicatorLabel: { fontSize: 22, color: 'var(--orange)', fontWeight: 700 },
-  indicatorCount: { fontSize: 22, color: 'var(--text-sub)' },
+  indicatorOuter: { padding: '0 16px 8px', flexShrink: 0 },
+  indicator: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 16px' },
+  indicatorLabel: { fontSize: 15, color: 'var(--orange)', fontWeight: 700 },
   bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', background: 'var(--orange)', borderRadius: 99, transition: 'width 0.3s ease' },
 
+  posiOuter: { padding: '0 16px 12px', flexShrink: 0 },
   posiBtn: { width: '100%', background: 'var(--orange-dark)', border: 'none', borderRadius: 9999, padding: '15px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(217,79,26,0.45)', letterSpacing: '0.5px' },
   posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
