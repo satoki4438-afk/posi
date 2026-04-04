@@ -35,6 +35,24 @@ const MOCK_POSTS = [
 
 const USER_TIER = 'free'
 
+const MOCK_PROFILE = {
+  name: 'さとき',
+  handle: '@satoki',
+  initials: 'さ',
+  friends: 12,
+  posts: 34,
+  totalPosi: 3247,
+  goals: [
+    { id: 'g1', text: '○○大学に合格するぞ！', date: '目標 2025年3月', achieved: false },
+    { id: 'g2', text: '今年は恋スル！💗', date: null, achieved: false },
+    { id: 'g3', text: 'フルマラソン完走する', date: '2024年12月', achieved: true },
+  ],
+  recentPosts: [
+    { id: 'rp1', text: 'アプリのMVPをVercelにデプロイできた！', posi: 257, time: '2日前', milestone: false },
+    { id: 'rp2', text: '英検2級合格した 🎉', posi: 1024, time: '先週', milestone: true },
+  ],
+}
+
 export default function FeedPage() {
   const [posts, setPosts] = useState(MOCK_POSTS)
   const [idx, setIdx] = useState(0)
@@ -155,12 +173,14 @@ export default function FeedPage() {
     }
   }
 
+  const NAV_LABELS = { home: 'ホーム', goal: '目標', notif: '通知', profile: 'プロフ' }
   const navTab = (tab, icon) => (
     <button
       style={{ ...S.navTab, ...(activeTab === tab ? S.navTabActive : {}) }}
       onClick={() => setActiveTab(tab)}
     >
-      {icon}
+      <span>{icon}</span>
+      <span style={S.navLabel}>{NAV_LABELS[tab]}</span>
     </button>
   )
 
@@ -168,17 +188,77 @@ export default function FeedPage() {
     <div style={S.root}>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button style={S.headerIconBtn} onClick={() => setActiveTab('notif')}>🔔</button>
+          <button style={S.headerIconBtn} onClick={() => setActiveTab('profile')}>👤</button>
+        </div>
       </header>
 
       <main
-        style={S.main}
-        onMouseMove={e => dragMove(e.clientX)}
-        onMouseUp={dragEnd}
-        onMouseLeave={dragEnd}
-        onTouchMove={e => { e.preventDefault(); dragMove(e.touches[0].clientX) }}
-        onTouchEnd={dragEnd}
+        style={{ ...S.main, overflowY: activeTab === 'profile' ? 'auto' : 'hidden' }}
+        onMouseMove={e => activeTab !== 'profile' && dragMove(e.clientX)}
+        onMouseUp={e => activeTab !== 'profile' && dragEnd()}
+        onMouseLeave={e => activeTab !== 'profile' && dragEnd()}
+        onTouchMove={e => { if (activeTab !== 'profile') { e.preventDefault(); dragMove(e.touches[0].clientX) } }}
+        onTouchEnd={e => activeTab !== 'profile' && dragEnd()}
       >
-        {!post ? (
+        {activeTab === 'profile' ? (
+          <div style={S.profileScroll}>
+            <div style={S.profileCard}>
+              <div style={S.profileAvatar}>{MOCK_PROFILE.initials}</div>
+              <div style={S.profileName}>{MOCK_PROFILE.name}</div>
+              <div style={S.profileHandle}>{MOCK_PROFILE.handle}</div>
+              <div style={S.profileStats}>
+                <div style={S.profileStat}>
+                  <span style={S.profileStatNum}>{MOCK_PROFILE.friends}</span>
+                  <span style={S.profileStatLabel}>フレンド</span>
+                </div>
+                <div style={S.profileStatDivider} />
+                <div style={S.profileStat}>
+                  <span style={S.profileStatNum}>{MOCK_PROFILE.posts}</span>
+                  <span style={S.profileStatLabel}>投稿</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={S.posiCountCard}>
+              <div>
+                <div style={S.posiCountLabel}>もらった Posi</div>
+                <div style={S.posiCountNum}>{MOCK_PROFILE.totalPosi.toLocaleString()} <span style={{ fontSize: 16, fontWeight: 600 }}>posi</span></div>
+              </div>
+              <div style={S.posiCountIcon}>🎆</div>
+            </div>
+
+            <div style={S.sectionHeader}>
+              <span style={S.sectionTitle}>🎯 目標</span>
+              <span style={S.sectionAction}>＋ 追加</span>
+            </div>
+            {MOCK_PROFILE.goals.map(g => (
+              <div key={g.id} style={{ ...S.goalCard, ...(g.achieved ? S.goalCardDone : {}) }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: g.achieved ? 'var(--text-sub)' : 'var(--text)', textDecoration: g.achieved ? 'line-through' : 'none' }}>{g.text}</div>
+                  {g.date && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3 }}>{g.date}</div>}
+                </div>
+                {g.achieved && <span style={S.achievedBadge}>達成 ✓</span>}
+              </div>
+            ))}
+            <button style={S.addGoalBtn}>＋ 目標を追加する</button>
+
+            <div style={{ ...S.sectionHeader, marginTop: 8 }}>
+              <span style={S.sectionTitle}>最近の投稿</span>
+            </div>
+            {MOCK_PROFILE.recentPosts.map(p => (
+              <div key={p.id} style={S.recentPostCard}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', marginBottom: 6 }}>{p.text}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 700 }}>🔥 {p.posi.toLocaleString()} posi {p.milestone ? '🏅' : ''}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.time}</span>
+                </div>
+              </div>
+            ))}
+            <div style={{ height: 20 }} />
+          </div>
+        ) : !post ? (
           <div style={S.empty}>
             <span style={{ fontSize: 52 }}>🎉</span>
             <p style={{ fontSize: 15, color: 'var(--text-sub)' }}>全部見たよ！また後でチェックしよう</p>
@@ -265,7 +345,8 @@ export default function FeedPage() {
 
 const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
-  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', background: 'var(--orange)', flexShrink: 0 },
+  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--orange)', flexShrink: 0 },
+  headerIconBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#fff', padding: 4 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
 
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
@@ -297,9 +378,37 @@ const S = {
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },
 
-  nav: { display: 'flex', alignItems: 'center', height: 60, borderTop: '0.5px solid var(--card-border)', background: 'var(--card-bg)', flexShrink: 0 },
-  navTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  navTabActive: { background: 'var(--orange-tint)' },
+  nav: { display: 'flex', alignItems: 'center', height: 64, borderTop: '0.5px solid var(--card-border)', background: 'var(--card-bg)', flexShrink: 0 },
+  navTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  navTabActive: { background: 'var(--orange-tint)', color: 'var(--orange)' },
+  navLabel: { fontSize: 10, fontWeight: 500, color: 'var(--text-sub)' },
+
+  profileScroll: { padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 },
+  profileCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '20px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 },
+  profileAvatar: { width: 64, height: 64, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#fff', fontWeight: 900, marginBottom: 4 },
+  profileName: { fontSize: 18, fontWeight: 700, color: 'var(--text)' },
+  profileHandle: { fontSize: 13, color: 'var(--text-sub)' },
+  profileStats: { display: 'flex', gap: 24, marginTop: 8, alignItems: 'center' },
+  profileStat: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
+  profileStatNum: { fontSize: 18, fontWeight: 700, color: 'var(--text)' },
+  profileStatLabel: { fontSize: 11, color: 'var(--text-sub)' },
+  profileStatDivider: { width: 1, height: 28, background: 'var(--card-border)' },
+
+  posiCountCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  posiCountLabel: { fontSize: 12, color: 'var(--text-sub)', marginBottom: 4 },
+  posiCountNum: { fontSize: 32, fontWeight: 900, color: 'var(--orange)' },
+  posiCountIcon: { width: 48, height: 48, borderRadius: 12, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 },
+
+  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px' },
+  sectionTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  sectionAction: { fontSize: 13, fontWeight: 600, color: 'var(--orange)', cursor: 'pointer' },
+
+  goalCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', borderLeft: '3px solid var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  goalCardDone: { borderLeft: '3px solid #ccc', background: '#fafafa' },
+  achievedBadge: { fontSize: 11, fontWeight: 700, color: '#2e7d32', background: '#e8f5e9', borderRadius: 99, padding: '3px 8px', flexShrink: 0 },
+  addGoalBtn: { background: 'none', border: '1.5px dashed var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 13, color: 'var(--text-sub)', cursor: 'pointer', width: '100%', textAlign: 'center' },
+
+  recentPostCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
   postTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postInner: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange)', color: '#fff', fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(255,107,53,0.4)' },
 }
