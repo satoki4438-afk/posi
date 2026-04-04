@@ -249,8 +249,8 @@ export default function FeedPage() {
 
 const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
-  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', background: 'var(--card-bg)', borderBottom: '0.5px solid var(--card-border)', flexShrink: 0 },
-  logo: { fontSize: 22, fontWeight: 900, color: 'var(--orange)', letterSpacing: '1px' },
+  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', background: 'var(--orange)', flexShrink: 0 },
+  logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
 
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
@@ -268,10 +268,10 @@ const S = {
   photoWrap: { height: '28vh', borderRadius: 14, overflow: 'hidden', flexShrink: 0 },
   photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
 
-  indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '8px 12px', border: '0.5px solid var(--orange-border)', flexShrink: 0 },
-  indicatorLabel: { fontSize: 11, color: 'var(--orange)', fontWeight: 700 },
-  indicatorCount: { fontSize: 11, color: 'var(--text-sub)' },
-  bar: { height: 3, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
+  indicator: { background: 'var(--bg-posi)', borderRadius: 10, padding: '16px 20px', border: '0.5px solid var(--orange-border)', flexShrink: 0 },
+  indicatorLabel: { fontSize: 22, color: 'var(--orange)', fontWeight: 700 },
+  indicatorCount: { fontSize: 22, color: 'var(--text-sub)' },
+  bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
   barFill: { height: '100%', background: 'var(--orange)', borderRadius: 99, transition: 'width 0.3s ease' },
 
   posiBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '15px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(255,107,53,0.4)', letterSpacing: '0.5px' },
