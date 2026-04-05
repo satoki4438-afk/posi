@@ -370,9 +370,9 @@ const S = {
 
   authorFixed: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', zIndex: 2 },
   authorRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
-  authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
-  authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
+  avatar: { width: 46, height: 46, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
+  authorName: { fontSize: 17, fontWeight: 700, color: 'var(--text)' },
+  authorTime: { fontSize: 13, color: 'var(--text-sub)', marginTop: 1 },
 
   mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
   photoArea: { overflow: 'hidden' },
