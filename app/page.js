@@ -376,9 +376,9 @@ const S = {
   authorTime: { fontSize: 13, color: 'var(--text-sub)', marginTop: 1 },
 
   mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
-  photoArea: { overflow: 'hidden' },
+  photoArea: { overflow: 'hidden', maxHeight: '45vh' },
   photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  photo: { width: '100%', height: 'auto', display: 'block' },
+  photo: { width: '100%', height: '100%', maxHeight: '45vh', objectFit: 'cover', display: 'block' },
   textArea: { background: '#fff', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
 
