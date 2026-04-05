@@ -76,6 +76,7 @@ export default function FeedPage() {
   const [popping, setPopping] = useState(false)
   const [wobble, setWobble] = useState(true)
   const [floatingEmojis, setFloatingEmojis] = useState([])
+  const [lightbox, setLightbox] = useState(null)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -294,7 +295,7 @@ export default function FeedPage() {
             <div style={S.centerWrap}>
               <div style={S.mainCard}>
                 {post.photo ? (
-                  <div style={S.photoArea}>
+                  <div style={S.photoArea} onClick={e => { e.stopPropagation(); setLightbox(post.photo) }}>
                     <img src={post.photo} alt="" style={S.photo} draggable={false} />
                   </div>
                 ) : (
@@ -354,6 +355,12 @@ export default function FeedPage() {
         {navTab('notif', '🔔')}
         {navTab('profile', '👤')}
       </nav>
+
+      {lightbox && (
+        <div style={S.lightboxOverlay} onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" style={S.lightboxImg} draggable={false} />
+        </div>
+      )}
     </div>
   )
 }
@@ -394,6 +401,9 @@ const S = {
   posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },
+
+  lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  lightboxImg: { maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain' },
 
   nav: { display: 'flex', alignItems: 'center', height: 64, borderTop: '0.5px solid var(--card-border)', background: 'var(--card-bg)', flexShrink: 0 },
   navTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 },
