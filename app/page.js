@@ -364,8 +364,8 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  centerWrap: { width: '100%', padding: '0 16px' },
+  screen: { position: 'fixed', top: 60, bottom: 190, left: 0, right: 0, maxWidth: 480, margin: '0 auto', zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' },
+  centerWrap: { width: '100%' },
   innerWrap: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
 
   authorRow: { width: '100%', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 },
