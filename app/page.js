@@ -31,6 +31,7 @@ const MOCK_POSTS = [
   { id: '23', author: 'まさと',   initials: 'ま', text: '懸垂20回連続できた！毎日コツコツやり続けた1年の成果',           posiCount: 567, target: 1000, time: '14時間前' },
   { id: '24', author: 'りな',     initials: 'り', text: '育休明け初日、無事に乗り越えた。職場のみんなに感謝',            posiCount: 719, target: 1000, time: '15時間前', photo: 'https://picsum.photos/seed/office11/400/220' },
   { id: '25', author: 'しんじ',   initials: 'し', text: '家族で植えた家庭菜園、初めてのトマトが収穫できた！',            posiCount: 183, target: 1000, time: '16時間前', photo: 'https://picsum.photos/seed/garden5/400/220' },
+  { id: '26', author: 'けいた',   initials: 'け', text: '富士山登頂した！3776m制覇',                                      posiCount: 512, target: 1000, time: '30分前',  photo: 'https://picsum.photos/seed/fuji26/400/500' },
 ]
 
 const USER_TIER = 'free'
