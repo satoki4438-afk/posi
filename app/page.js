@@ -113,13 +113,21 @@ export default function FeedPage() {
   const [fireworkModal, setFireworkModal] = useState(null)
   const [postModal, setPostModal] = useState(null)
   const [cheersSubView, setCheersSubView] = useState(null)
+  const [notifSetting, setNotifSetting] = useState('all')
+  const [, setFwTick] = useState(0)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
+  const fwStartRef = useRef(Date.now())
 
   useEffect(() => {
     const t = setTimeout(() => setWobble(false), 1500)
     return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    const t = setInterval(() => setFwTick(n => n + 1), 60000)
+    return () => clearInterval(t)
   }, [])
 
   const post = posts[idx] ?? null
@@ -229,6 +237,14 @@ export default function FeedPage() {
     }
   }
 
+  const fwElapsedMin = Math.floor((Date.now() - fwStartRef.current) / 60000)
+  const getFwRemaining = (hoursLeft) => {
+    const rem = Math.max(0, hoursLeft * 60 - fwElapsedMin)
+    if (rem === 0) return null
+    if (rem >= 60) return `あと${Math.floor(rem / 60)}時間${rem % 60 > 0 ? rem % 60 + '分' : ''}`
+    return `あと${rem}分`
+  }
+
   const isFeed = activeTab === 'home'
   const isScroll = activeTab === 'profile' || activeTab === 'cheers'
 
@@ -271,14 +287,15 @@ export default function FeedPage() {
 
   const AchievedCard = ({ p }) => (
     <div style={S.achievedHistCard} onClick={() => setPostModal(p)}>
-      <div style={S.histAvatar}>{p.initials}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.author}</span>
-          <span style={{ fontSize: 11, color: 'var(--text-sub)', flexShrink: 0, marginLeft: 8 }}>🎆 {p.achievedDate}</span>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{p.text}</div>
-        <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 700 }}>{p.posiCount.toLocaleString()} posi</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={S.histAvatar}>{p.initials}</div>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.author}</span>
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5, marginBottom: 8 }}>{p.text}</div>
+      <div style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 600, marginBottom: 6 }}>あなたの応援で花火が上がりました🎆</div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>達成日 {p.achievedDate}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.posiCount.toLocaleString()} posi</span>
       </div>
     </div>
   )
@@ -361,6 +378,25 @@ export default function FeedPage() {
                 </div>
               </div>
             ))}
+
+            <div style={{ ...S.sectionHeader, marginTop: 8 }}>
+              <span style={S.sectionTitle}>⚙️ 設定</span>
+            </div>
+            <div style={S.settingRow}>
+              <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>花火の通知</span>
+              <div style={S.notifToggleGroup}>
+                {[['all', '全員'], ['friends', 'フレンドのみ'], ['off', 'オフ']].map(([val, label]) => (
+                  <button
+                    key={val}
+                    style={{ ...S.notifToggleBtn, ...(notifSetting === val ? S.notifToggleBtnActive : {}) }}
+                    onClick={() => setNotifSetting(val)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ height: 20 }} />
           </div>
 
@@ -391,40 +427,48 @@ export default function FeedPage() {
                 <span style={S.todayBadge}>本日限定</span>
               </div>
               <div style={S.hscrollWrap}>
-                {MOCK_FIREWORKS.map(fw => (
-                  <div
-                    key={fw.id}
-                    style={{ ...S.fireworkCard, ...(fw.expired ? S.fireworkCardExpired : {}) }}
-                    onClick={() => !fw.expired && setFireworkModal(fw)}
-                  >
-                    <span style={{ fontSize: 32 }}>🎆</span>
-                    <div style={S.fwAvatar}>{fw.initials}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 4, textAlign: 'center' }}>{fw.author}</div>
-                    <div style={{ fontSize: 10, color: '#bbb', marginTop: 2, textAlign: 'center' }}>1,000 posi達成！</div>
-                    {fw.expired
-                      ? <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>終了</div>
-                      : <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 4 }}>あと{fw.hoursLeft}時間</div>
-                    }
-                  </div>
-                ))}
+                {MOCK_FIREWORKS.map(fw => {
+                  const remText = fw.expired ? null : getFwRemaining(fw.hoursLeft)
+                  const isExpired = fw.expired || remText === null
+                  return (
+                    <div
+                      key={fw.id}
+                      style={{ ...S.fireworkCard, ...(isExpired ? S.fireworkCardExpired : {}) }}
+                      onClick={() => !isExpired && setFireworkModal(fw)}
+                    >
+                      <span style={{ fontSize: 32 }}>🎆</span>
+                      <div style={S.fwAvatar}>{fw.initials}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 4, textAlign: 'center' }}>{fw.author}</div>
+                      <div style={{ fontSize: 10, color: '#bbb', marginTop: 2, textAlign: 'center' }}>1,000 posi達成！</div>
+                      {isExpired
+                        ? <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>終了</div>
+                        : <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 4 }}>{remText}</div>
+                      }
+                    </div>
+                  )
+                })}
               </div>
 
               {/* 2. フレンド */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
                 <span style={S.sectionTitle}>👥 フレンド</span>
               </div>
-              <div style={S.hscrollWrap}>
-                {MOCK_FRIENDS.map(fr => (
-                  <div key={fr.id} style={S.friendItem} onClick={() => setActiveTab('profile')}>
-                    <div style={S.friendAvatar}>{fr.initials}</div>
-                    <div style={S.friendName}>{fr.name}</div>
+              {MOCK_FRIENDS.length === 0 ? (
+                <div style={S.emptyState}>まだフレンドがいません　POSIし合うと繋がれます</div>
+              ) : (
+                <div style={S.hscrollWrap}>
+                  {MOCK_FRIENDS.map(fr => (
+                    <div key={fr.id} style={S.friendItem} onClick={() => setActiveTab('profile')}>
+                      <div style={S.friendAvatar}>{fr.initials}</div>
+                      <div style={S.friendName}>{fr.name}</div>
+                    </div>
+                  ))}
+                  <div style={S.friendItem}>
+                    <div style={S.friendInviteBtn}>＋</div>
+                    <div style={S.friendName}>招待</div>
                   </div>
-                ))}
-                <div style={S.friendItem}>
-                  <div style={S.friendInviteBtn}>＋</div>
-                  <div style={S.friendName}>招待</div>
                 </div>
-              </div>
+              )}
 
               {/* 3. Cheers履歴 */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
@@ -433,15 +477,31 @@ export default function FeedPage() {
                   <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>（直近100件）</span>
                 </div>
               </div>
-              {MOCK_CHEERS_HISTORY.slice(0, 3).map(p => <HistoryCard key={p.id} p={p} />)}
-              <button style={S.moreBtn} onClick={() => setCheersSubView('cheers-all')}>もっと見る →</button>
+              {MOCK_CHEERS_HISTORY.length === 0 ? (
+                <div style={S.emptyState}>まだCheersした投稿がありません</div>
+              ) : (
+                <>
+                  {MOCK_CHEERS_HISTORY.slice(0, 3).map(p => <HistoryCard key={p.id} p={p} />)}
+                  {MOCK_CHEERS_HISTORY.length > 3 && (
+                    <button style={S.moreBtn} onClick={() => setCheersSubView('cheers-all')}>もっと見る →</button>
+                  )}
+                </>
+              )}
 
               {/* 4. 達成済み */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
                 <span style={S.sectionTitle}>🏆 達成済み</span>
               </div>
-              {MOCK_ACHIEVED.slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
-              <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
+              {MOCK_ACHIEVED.length === 0 ? (
+                <div style={S.emptyState}>まだ達成者がいません　どんどんPosiしよう！</div>
+              ) : (
+                <>
+                  {MOCK_ACHIEVED.slice(0, 30).slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
+                  {MOCK_ACHIEVED.length > 3 && (
+                    <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
+                  )}
+                </>
+              )}
 
               <div style={{ height: 20 }} />
             </div>
@@ -639,7 +699,7 @@ const S = {
   // Cheers screen
   todayBadge: { fontSize: 11, background: 'var(--orange)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontWeight: 700 },
   hscrollWrap: { display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' },
-  fireworkCard: { minWidth: 100, background: '#1a1a2e', borderRadius: 16, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 },
+  fireworkCard: { minWidth: 130, background: '#1a1a2e', borderRadius: 20, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 },
   fireworkCardExpired: { opacity: 0.4 },
   fwAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 800, marginTop: 8 },
   friendItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 },
@@ -651,6 +711,11 @@ const S = {
   histAvatar: { width: 38, height: 38, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--orange)', fontWeight: 800, flexShrink: 0 },
   moreBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--orange)', fontWeight: 700, cursor: 'pointer', textAlign: 'right', padding: '4px 0', alignSelf: 'flex-end' },
   backBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--text-sub)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '4px 0' },
+  emptyState: { fontSize: 13, color: 'var(--text-sub)', textAlign: 'center', padding: '20px 0' },
+  settingRow: { background: 'var(--card-bg)', borderRadius: 12, padding: '14px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  notifToggleGroup: { display: 'flex', gap: 4 },
+  notifToggleBtn: { fontSize: 11, fontWeight: 600, border: '1px solid var(--card-border)', borderRadius: 99, padding: '5px 10px', background: 'none', color: 'var(--text-sub)', cursor: 'pointer' },
+  notifToggleBtnActive: { background: 'var(--orange)', borderColor: 'var(--orange)', color: '#fff' },
 
   // モーダル
   fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
