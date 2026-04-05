@@ -54,6 +54,39 @@ const MOCK_PROFILE = {
   ],
 }
 
+const MOCK_FIREWORKS = [
+  { id: 'fw1', author: 'けんじ', initials: 'け', text: '念願のカフェ開店！', hoursLeft: 3,  expired: false },
+  { id: 'fw2', author: 'まい',   initials: 'ま', text: '転職内定もらえた！', hoursLeft: 0,  expired: true  },
+  { id: 'fw3', author: 'たろう', initials: 'た', text: '10kmマラソン完走！', hoursLeft: 11, expired: false },
+  { id: 'fw4', author: 'りな',   initials: 'り', text: '育休明け初日乗り越えた', hoursLeft: 6, expired: false },
+]
+
+const MOCK_FRIENDS = [
+  { id: 'fr1', initials: 'け', name: 'けんじ' },
+  { id: 'fr2', initials: 'ま', name: 'まい' },
+  { id: 'fr3', initials: 'た', name: 'たろう' },
+  { id: 'fr4', initials: 'り', name: 'りな' },
+  { id: 'fr5', initials: 'は', name: 'はなこ' },
+  { id: 'fr6', initials: 'だ', name: 'だいき' },
+]
+
+const MOCK_CHEERS_HISTORY = [
+  { id: 'ch1', author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                time: '2分前',   photo: 'https://picsum.photos/seed/marathon1/400/220' },
+  { id: 'ch2', author: 'はなこ',   initials: 'は', text: 'TOEIC 900点超えた。3年間の勉強がついに実った！',    time: '15分前' },
+  { id: 'ch3', author: 'りょうた', initials: 'り', text: 'ベンチプレス100kg達成！1年半かかったけどやっと三桁！', time: '5分前',  photo: 'https://picsum.photos/seed/gym42/400/220' },
+  { id: 'ch4', author: 'えり',     initials: 'え', text: 'ランニング累計500km達成。毎朝コツコツ積み上げた結果', time: '4時間前' },
+  { id: 'ch5', author: 'なつみ',   initials: 'な', text: '毎日続けてた日記、今日でちょうど1年になった📖',      time: '1時間前', photo: 'https://picsum.photos/seed/notebook7/400/220' },
+  { id: 'ch6', author: 'しょうた', initials: 'し', text: 'スクワット自重100回、ノンストップでできた！',         time: '2時間前' },
+]
+
+const MOCK_ACHIEVED = [
+  { id: 'ac1', author: 'けんじ',   initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ',      achievedDate: '4/3', posiCount: 1000, photo: 'https://picsum.photos/seed/cafe99/400/220' },
+  { id: 'ac2', author: 'まい',     initials: 'ま', text: '転職活動、内定もらえた！希望の会社に行けます',            achievedDate: '4/3', posiCount: 1000 },
+  { id: 'ac3', author: 'りな',     initials: 'り', text: '育休明け初日、無事に乗り越えた。職場のみんなに感謝',      achievedDate: '4/2', posiCount: 1000, photo: 'https://picsum.photos/seed/office11/400/220' },
+  { id: 'ac4', author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                    achievedDate: '4/1', posiCount: 1000, photo: 'https://picsum.photos/seed/marathon1/400/220' },
+  { id: 'ac5', author: 'こうへい', initials: 'こ', text: '子供と一緒に作った工作、学校で金賞取れた！',              achievedDate: '3/31', posiCount: 1000, photo: 'https://picsum.photos/seed/craft55/400/220' },
+]
+
 const BG_PATTERNS = [
   { background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', emoji: '🌿' },
   { background: 'linear-gradient(135deg, #bbdefb, #90caf9)', emoji: '🌊' },
@@ -77,6 +110,9 @@ export default function FeedPage() {
   const [wobble, setWobble] = useState(true)
   const [floatingEmojis, setFloatingEmojis] = useState([])
   const [lightbox, setLightbox] = useState(null)
+  const [fireworkModal, setFireworkModal] = useState(null)
+  const [postModal, setPostModal] = useState(null)
+  const [cheersSubView, setCheersSubView] = useState(null)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -193,15 +229,58 @@ export default function FeedPage() {
     }
   }
 
-  const NAV_LABELS = { home: 'ホーム', goal: '目標', notif: '通知', profile: 'プロフ' }
+  const isFeed = activeTab === 'home'
+  const isScroll = activeTab === 'profile' || activeTab === 'cheers'
+
+  const NAV_LABELS = { home: 'ホーム', goal: '目標', cheers: 'Cheers', profile: 'プロフ' }
   const navTab = (tab, icon) => (
     <button
       style={{ ...S.navTab, ...(activeTab === tab ? S.navTabActive : {}) }}
-      onClick={() => setActiveTab(tab)}
+      onClick={() => { setActiveTab(tab); setCheersSubView(null) }}
     >
       <span>{icon}</span>
       <span style={S.navLabel}>{NAV_LABELS[tab]}</span>
     </button>
+  )
+
+  const PostModalCard = ({ p }) => (
+    <div style={S.postModalCard} onClick={e => e.stopPropagation()}>
+      {p.photo && (
+        <div style={S.photoArea}>
+          <img src={p.photo} alt="" style={S.photo} draggable={false} />
+        </div>
+      )}
+      <div style={S.textArea}>
+        <p style={{ ...S.postText, fontSize: p.text.length <= 10 ? '2rem' : p.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{p.text}</p>
+      </div>
+    </div>
+  )
+
+  const HistoryCard = ({ p }) => (
+    <div style={S.historyCard} onClick={() => setPostModal(p)}>
+      <div style={S.histAvatar}>{p.initials}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.author}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-sub)', flexShrink: 0, marginLeft: 8 }}>{p.time}</span>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.text}</div>
+      </div>
+    </div>
+  )
+
+  const AchievedCard = ({ p }) => (
+    <div style={S.achievedHistCard} onClick={() => setPostModal(p)}>
+      <div style={S.histAvatar}>{p.initials}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.author}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-sub)', flexShrink: 0, marginLeft: 8 }}>🎆 {p.achievedDate}</span>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{p.text}</div>
+        <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 700 }}>{p.posiCount.toLocaleString()} posi</span>
+      </div>
+    </div>
   )
 
   return (
@@ -210,7 +289,7 @@ export default function FeedPage() {
         <span style={S.logo}>POSI.</span>
       </header>
 
-      {activeTab === 'home' && post && (
+      {isFeed && post && (
         <div style={S.authorFixed}>
           <div style={S.avatar}>{post.initials}</div>
           <div>
@@ -221,12 +300,12 @@ export default function FeedPage() {
       )}
 
       <main
-        style={{ ...S.main, overflowY: activeTab === 'profile' ? 'auto' : 'hidden' }}
-        onMouseMove={e => activeTab !== 'profile' && dragMove(e.clientX)}
-        onMouseUp={e => activeTab !== 'profile' && dragEnd()}
-        onMouseLeave={e => activeTab !== 'profile' && dragEnd()}
-        onTouchMove={e => { if (activeTab !== 'profile') { e.preventDefault(); dragMove(e.touches[0].clientX) } }}
-        onTouchEnd={e => activeTab !== 'profile' && dragEnd()}
+        style={{ ...S.main, overflowY: isScroll ? 'auto' : 'hidden' }}
+        onMouseMove={e => isFeed && dragMove(e.clientX)}
+        onMouseUp={e => isFeed && dragEnd()}
+        onMouseLeave={e => isFeed && dragEnd()}
+        onTouchMove={e => { if (isFeed) { e.preventDefault(); dragMove(e.touches[0].clientX) } }}
+        onTouchEnd={e => isFeed && dragEnd()}
       >
         {activeTab === 'profile' ? (
           <div style={S.profileScroll}>
@@ -284,6 +363,90 @@ export default function FeedPage() {
             ))}
             <div style={{ height: 20 }} />
           </div>
+
+        ) : activeTab === 'cheers' ? (
+          cheersSubView === 'cheers-all' ? (
+            <div style={S.profileScroll}>
+              <button style={S.backBtn} onClick={() => setCheersSubView(null)}>← 戻る</button>
+              <div style={{ ...S.sectionHeader, marginTop: 4 }}>
+                <span style={S.sectionTitle}>👍 Cheersした（全件）</span>
+              </div>
+              {MOCK_CHEERS_HISTORY.map(p => <HistoryCard key={p.id} p={p} />)}
+              <div style={{ height: 20 }} />
+            </div>
+          ) : cheersSubView === 'achieved-all' ? (
+            <div style={S.profileScroll}>
+              <button style={S.backBtn} onClick={() => setCheersSubView(null)}>← 戻る</button>
+              <div style={{ ...S.sectionHeader, marginTop: 4 }}>
+                <span style={S.sectionTitle}>🏆 達成済み（全件）</span>
+              </div>
+              {MOCK_ACHIEVED.map(p => <AchievedCard key={p.id} p={p} />)}
+              <div style={{ height: 20 }} />
+            </div>
+          ) : (
+            <div style={S.profileScroll}>
+              {/* 1. 今日の花火 */}
+              <div style={S.sectionHeader}>
+                <span style={S.sectionTitle}>🎆 今日の花火</span>
+                <span style={S.todayBadge}>本日限定</span>
+              </div>
+              <div style={S.hscrollWrap}>
+                {MOCK_FIREWORKS.map(fw => (
+                  <div
+                    key={fw.id}
+                    style={{ ...S.fireworkCard, ...(fw.expired ? S.fireworkCardExpired : {}) }}
+                    onClick={() => !fw.expired && setFireworkModal(fw)}
+                  >
+                    <span style={{ fontSize: 32 }}>🎆</span>
+                    <div style={S.fwAvatar}>{fw.initials}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 4, textAlign: 'center' }}>{fw.author}</div>
+                    <div style={{ fontSize: 10, color: '#bbb', marginTop: 2, textAlign: 'center' }}>1,000 posi達成！</div>
+                    {fw.expired
+                      ? <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>終了</div>
+                      : <div style={{ fontSize: 10, color: 'var(--orange)', marginTop: 4 }}>あと{fw.hoursLeft}時間</div>
+                    }
+                  </div>
+                ))}
+              </div>
+
+              {/* 2. フレンド */}
+              <div style={{ ...S.sectionHeader, marginTop: 20 }}>
+                <span style={S.sectionTitle}>👥 フレンド</span>
+              </div>
+              <div style={S.hscrollWrap}>
+                {MOCK_FRIENDS.map(fr => (
+                  <div key={fr.id} style={S.friendItem} onClick={() => setActiveTab('profile')}>
+                    <div style={S.friendAvatar}>{fr.initials}</div>
+                    <div style={S.friendName}>{fr.name}</div>
+                  </div>
+                ))}
+                <div style={S.friendItem}>
+                  <div style={S.friendInviteBtn}>＋</div>
+                  <div style={S.friendName}>招待</div>
+                </div>
+              </div>
+
+              {/* 3. Cheers履歴 */}
+              <div style={{ ...S.sectionHeader, marginTop: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={S.sectionTitle}>👍 Cheersした</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>（直近100件）</span>
+                </div>
+              </div>
+              {MOCK_CHEERS_HISTORY.slice(0, 3).map(p => <HistoryCard key={p.id} p={p} />)}
+              <button style={S.moreBtn} onClick={() => setCheersSubView('cheers-all')}>もっと見る →</button>
+
+              {/* 4. 達成済み */}
+              <div style={{ ...S.sectionHeader, marginTop: 20 }}>
+                <span style={S.sectionTitle}>🏆 達成済み</span>
+              </div>
+              {MOCK_ACHIEVED.slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
+              <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
+
+              <div style={{ height: 20 }} />
+            </div>
+          )
+
         ) : !post ? (
           <div style={S.empty}>
             <span style={{ fontSize: 52 }}>🎉</span>
@@ -320,7 +483,7 @@ export default function FeedPage() {
         )}
       </main>
 
-      {activeTab === 'home' && post && (
+      {isFeed && post && (
         <div style={S.bottomFixed}>
           <div style={S.indicator}>
             <span
@@ -365,7 +528,7 @@ export default function FeedPage() {
         <button style={S.postTab} onClick={() => setActiveTab('post')}>
           <div style={S.postInner}>＋</div>
         </button>
-        {navTab('notif', '🔔')}
+        {navTab('cheers', '🎆')}
         {navTab('profile', '👤')}
       </nav>
 
@@ -373,6 +536,25 @@ export default function FeedPage() {
         <div style={S.lightboxOverlay} onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" style={S.lightboxImg} draggable={false} />
           <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setLightbox(null) }}>×</button>
+        </div>
+      )}
+
+      {fireworkModal && (
+        <div style={S.fwOverlay} onClick={() => setFireworkModal(null)}>
+          <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setFireworkModal(null) }}>×</button>
+          <div style={S.fwModalContent} onClick={e => e.stopPropagation()}>
+            <div className="posi-pop" style={{ fontSize: 72, textAlign: 'center' }}>🎆</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', margin: '16px 0 8px' }}>{fireworkModal.author}さん</div>
+            <div style={{ fontSize: 15, color: '#ddd', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>{fireworkModal.text}</div>
+            <div style={{ fontSize: 18, color: 'var(--orange)', fontWeight: 900, textAlign: 'center' }}>🎉 1,000 posi達成！</div>
+          </div>
+        </div>
+      )}
+
+      {postModal && (
+        <div style={S.postOverlay} onClick={() => setPostModal(null)}>
+          <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setPostModal(null) }}>×</button>
+          <PostModalCard p={postModal} />
         </div>
       )}
     </div>
@@ -453,4 +635,26 @@ const S = {
   recentPostCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
   postTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postInner: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange)', color: '#fff', fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(255,107,53,0.4)' },
+
+  // Cheers screen
+  todayBadge: { fontSize: 11, background: 'var(--orange)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontWeight: 700 },
+  hscrollWrap: { display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' },
+  fireworkCard: { minWidth: 100, background: '#1a1a2e', borderRadius: 16, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 },
+  fireworkCardExpired: { opacity: 0.4 },
+  fwAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 800, marginTop: 8 },
+  friendItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 },
+  friendAvatar: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--orange)', fontWeight: 800 },
+  friendInviteBtn: { width: 48, height: 48, borderRadius: '50%', background: 'var(--card-bg)', border: '2px dashed var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--text-sub)', cursor: 'pointer' },
+  friendName: { fontSize: 11, color: 'var(--text-sub)', fontWeight: 500 },
+  historyCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
+  achievedHistCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', borderLeft: '3px solid var(--orange)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
+  histAvatar: { width: 38, height: 38, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--orange)', fontWeight: 800, flexShrink: 0 },
+  moreBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--orange)', fontWeight: 700, cursor: 'pointer', textAlign: 'right', padding: '4px 0', alignSelf: 'flex-end' },
+  backBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--text-sub)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '4px 0' },
+
+  // モーダル
+  fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  fwModalContent: { padding: '32px 24px', maxWidth: 320, width: '100%' },
+  postOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' },
+  postModalCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' },
 }
