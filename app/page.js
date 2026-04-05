@@ -200,6 +200,16 @@ export default function FeedPage() {
         <span style={S.logo}>POSI.</span>
       </header>
 
+      {activeTab === 'home' && post && (
+        <div style={S.authorRow}>
+          <div style={S.avatar}>{post.initials}</div>
+          <div>
+            <div style={S.authorName}>{post.author}</div>
+            <div style={S.authorTime}>{post.time}</div>
+          </div>
+        </div>
+      )}
+
       <main
         style={{ ...S.main, overflowY: activeTab === 'profile' ? 'auto' : 'hidden' }}
         onMouseMove={e => activeTab !== 'profile' && dragMove(e.clientX)}
@@ -280,28 +290,18 @@ export default function FeedPage() {
               <div key={fe.id} className="emoji-fly" style={S.floatingEmoji}>{fe.e}</div>
             ))}
 
-            <div style={S.cardGroup}>
-              <div style={S.authorRow}>
-                <div style={S.avatar}>{post.initials}</div>
-                <div>
-                  <div style={S.authorName}>{post.author}</div>
-                  <div style={S.authorTime}>{post.time}</div>
+            <div style={S.mainCard}>
+              {post.photo ? (
+                <div style={S.photoArea}>
+                  <img src={post.photo} alt="" style={S.photo} draggable={false} />
                 </div>
-              </div>
-
-              <div style={S.mainCard}>
-                {post.photo ? (
-                  <div style={S.photoArea}>
-                    <img src={post.photo} alt="" style={S.photo} draggable={false} />
-                  </div>
-                ) : (
-                  <div style={{ ...S.photoArea, ...{ background: getPattern(post.id).background }, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
-                  </div>
-                )}
-                <div style={S.textArea}>
-                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+              ) : (
+                <div style={{ ...S.photoAreaNoPhoto, background: getPattern(post.id).background }}>
+                  <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
                 </div>
+              )}
+              <div style={S.textArea}>
+                <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
               </div>
             </div>
           </div>
@@ -365,16 +365,15 @@ const S = {
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform' },
 
-  cardGroup: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column', gap: 8 },
-
-  authorRow: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
+  authorRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', flexShrink: 0, background: 'var(--bg)' },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  mainCard: { borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
-  photoArea: { height: 200, overflow: 'hidden' },
-  photo: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+  mainCard: { margin: '0 16px', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
+  photoArea: { overflow: 'hidden' },
+  photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  photo: { width: '100%', height: 'auto', display: 'block' },
   textArea: { background: '#fff', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
 
