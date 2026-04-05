@@ -200,16 +200,6 @@ export default function FeedPage() {
         <span style={S.logo}>POSI.</span>
       </header>
 
-      {activeTab === 'home' && post && (
-        <div style={S.authorRow}>
-          <div style={S.avatar}>{post.initials}</div>
-          <div>
-            <div style={S.authorName}>{post.author}</div>
-            <div style={S.authorTime}>{post.time}</div>
-          </div>
-        </div>
-      )}
-
       <main
         style={{ ...S.main, overflowY: activeTab === 'profile' ? 'auto' : 'hidden' }}
         onMouseMove={e => activeTab !== 'profile' && dragMove(e.clientX)}
@@ -290,18 +280,29 @@ export default function FeedPage() {
               <div key={fe.id} className="emoji-fly" style={S.floatingEmoji}>{fe.e}</div>
             ))}
 
-            <div style={S.mainCard}>
-              {post.photo ? (
-                <div style={S.photoArea}>
-                  <img src={post.photo} alt="" style={S.photo} draggable={false} />
+            <div style={S.centerWrap}>
+              <div style={S.innerWrap}>
+                <div style={S.authorRow}>
+                  <div style={S.avatar}>{post.initials}</div>
+                  <div>
+                    <div style={S.authorName}>{post.author}</div>
+                    <div style={S.authorTime}>{post.time}</div>
+                  </div>
                 </div>
-              ) : (
-                <div style={{ ...S.photoAreaNoPhoto, background: getPattern(post.id).background }}>
-                  <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
+                <div style={S.mainCard}>
+                  {post.photo ? (
+                    <div style={S.photoArea}>
+                      <img src={post.photo} alt="" style={S.photo} draggable={false} />
+                    </div>
+                  ) : (
+                    <div style={{ ...S.photoAreaNoPhoto, background: getPattern(post.id).background }}>
+                      <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
+                    </div>
+                  )}
+                  <div style={S.textArea}>
+                    <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+                  </div>
                 </div>
-              )}
-              <div style={S.textArea}>
-                <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
               </div>
             </div>
           </div>
@@ -363,14 +364,16 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform' },
+  screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  centerWrap: { width: '100%', padding: '0 16px' },
+  innerWrap: { width: '100%', display: 'flex', flexDirection: 'column', gap: 8 },
 
-  authorRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', flexShrink: 0, background: 'var(--bg)' },
+  authorRow: { display: 'flex', alignItems: 'center', gap: 10 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  mainCard: { margin: '0 16px', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
+  mainCard: { borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
   photoArea: { overflow: 'hidden' },
   photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   photo: { width: '100%', height: 'auto', display: 'block' },
