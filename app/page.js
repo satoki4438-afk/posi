@@ -366,14 +366,14 @@ const S = {
 
   screen: { position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   centerWrap: { width: '100%', padding: '0 16px' },
-  innerWrap: { width: '100%', display: 'flex', flexDirection: 'column', gap: 8 },
+  innerWrap: { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
 
-  authorRow: { display: 'flex', alignItems: 'center', gap: 10 },
+  authorRow: { width: '100%', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 },
   avatar: { width: 40, height: 40, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
   authorName: { fontSize: 14, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 11, color: 'var(--text-sub)', marginTop: 1 },
 
-  mainCard: { borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
+  mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
   photoArea: { overflow: 'hidden' },
   photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   photo: { width: '100%', height: 'auto', display: 'block' },
