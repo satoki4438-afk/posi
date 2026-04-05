@@ -43,6 +43,14 @@
   animation: emojiFly 0.75s ease-out forwards;
 }
 
+@keyframes indicatorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+.indicator-blink {
+  animation: indicatorBlink 0.8s ease-in-out infinite;
+}
+
 *,
 *::before,
 *::after {

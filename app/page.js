@@ -126,9 +126,17 @@ export default function FeedPage() {
     if (!post || sent[post.id]) return
     setPopping(true)
     setTimeout(() => setPopping(false), 380)
-    const fid = Date.now()
-    setFloatingEmojis(es => [...es, { id: fid, e: emoji }])
-    setTimeout(() => setFloatingEmojis(es => es.filter(fe => fe.id !== fid)), 800)
+    const count = 3 + Math.floor(Math.random() * 3)
+    const particles = Array.from({ length: count }, (_, i) => ({
+      id: Date.now() + i,
+      e: emoji,
+      left: 15 + Math.random() * 70,
+      dur: 0.6 + Math.random() * 0.4,
+      delay: Math.random() * 0.15,
+    }))
+    setFloatingEmojis(es => [...es, ...particles])
+    const ids = new Set(particles.map(p => p.id))
+    setTimeout(() => setFloatingEmojis(es => es.filter(fe => !ids.has(fe.id))), 1200)
     setSent(s => ({ ...s, [post.id]: true }))
     setPosts(ps => ps.map(p =>
       p.id === post.id ? { ...p, posiCount: Math.min(p.posiCount + 1, p.target) } : p
@@ -289,7 +297,7 @@ export default function FeedPage() {
             onTouchStart={e => { setWobble(false); dragStart(e.touches[0].clientX) }}
           >
             {floatingEmojis.map(fe => (
-              <div key={fe.id} className="emoji-fly" style={S.floatingEmoji}>{fe.e}</div>
+              <div key={fe.id} className="emoji-fly" style={{ ...S.floatingEmoji, left: `${fe.left}%`, animationDuration: `${fe.dur}s`, animationDelay: `${fe.delay}s` }}>{fe.e}</div>
             ))}
 
             <div style={S.centerWrap}>
@@ -315,9 +323,14 @@ export default function FeedPage() {
       {activeTab === 'home' && post && (
         <div style={S.bottomFixed}>
           <div style={S.indicator}>
-            <span style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}>🎆 あと{remaining.toLocaleString()}</span>
+            <span
+              className={remaining <= 50 ? 'indicator-blink' : ''}
+              style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}
+            >
+              {remaining <= 10 ? `🎆 もうすぐ花火！あと${remaining.toLocaleString()}` : `🎆 あと${remaining.toLocaleString()}`}
+            </span>
             <div style={S.bar}>
-              <div style={{ ...S.barFill, width: `${progress}%` }} />
+              <div style={{ ...S.barFill, width: `${progress}%`, ...(remaining <= 100 ? { background: '#e53935' } : {}) }} />
             </div>
           </div>
 
@@ -359,6 +372,7 @@ export default function FeedPage() {
       {lightbox && (
         <div style={S.lightboxOverlay} onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" style={S.lightboxImg} draggable={false} />
+          <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setLightbox(null) }}>×</button>
         </div>
       )}
     </div>
@@ -389,7 +403,7 @@ const S = {
   textArea: { background: '#fff', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
 
-  floatingEmoji: { position: 'absolute', bottom: 90, left: '50%', fontSize: 40, zIndex: 10, pointerEvents: 'none' },
+  floatingEmoji: { position: 'absolute', bottom: 90, fontSize: 36, zIndex: 10, pointerEvents: 'none' },
 
   bottomFixed: { position: 'fixed', bottom: 64, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 20 },
   indicator: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 16px' },
@@ -404,6 +418,7 @@ const S = {
 
   lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   lightboxImg: { maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain' },
+  lightboxClose: { position: 'fixed', top: 16, right: 16, zIndex: 101, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', fontSize: 20, fontWeight: 700, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 
   nav: { display: 'flex', alignItems: 'center', height: 64, borderTop: '0.5px solid var(--card-border)', background: 'var(--card-bg)', flexShrink: 0 },
   navTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 },
