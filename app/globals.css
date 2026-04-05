@@ -51,6 +51,19 @@
   animation: indicatorBlink 0.8s ease-in-out infinite;
 }
 
+@keyframes scrollMsg {
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
+}
+
+@keyframes msgBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.msg-blink {
+  animation: msgBlink 1.2s ease-in-out infinite;
+}
+
 *,
 *::before,
 *::after {

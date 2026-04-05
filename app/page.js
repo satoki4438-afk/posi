@@ -55,10 +55,36 @@ const MOCK_PROFILE = {
 }
 
 const MOCK_FIREWORKS = [
-  { id: 'fw1', author: 'けんじ', initials: 'け', text: '念願のカフェ開店！', hoursLeft: 3,  expired: false },
-  { id: 'fw2', author: 'まい',   initials: 'ま', text: '転職内定もらえた！', hoursLeft: 0,  expired: true  },
-  { id: 'fw3', author: 'たろう', initials: 'た', text: '10kmマラソン完走！', hoursLeft: 11, expired: false },
-  { id: 'fw4', author: 'りな',   initials: 'り', text: '育休明け初日乗り越えた', hoursLeft: 6, expired: false },
+  { id: 'fw1', author: 'けんじ', initials: 'け', text: '念願のカフェ開店！', hoursLeft: 3,  expired: false,
+    messages: [
+      { id: 'f1m1', text: 'おめでとう！', own: false },
+      { id: 'f1m2', text: 'ずっと応援してたよ', own: true },
+      { id: 'f1m3', text: 'カフェ行きたい！', own: false },
+      { id: 'f1m4', text: 'すごい！夢が叶ったね', own: false },
+      { id: 'f1m5', text: '頑張ったね🎉', own: false },
+    ]
+  },
+  { id: 'fw2', author: 'まい',   initials: 'ま', text: '転職内定もらえた！', hoursLeft: 0,  expired: true,
+    messages: [
+      { id: 'f2m1', text: 'おめでとう！', own: false },
+      { id: 'f2m2', text: '新天地でも頑張れ', own: false },
+    ]
+  },
+  { id: 'fw3', author: 'たろう', initials: 'た', text: '10kmマラソン完走！', hoursLeft: 11, expired: false,
+    messages: [
+      { id: 'f3m1', text: '走り切ったね！', own: false },
+      { id: 'f3m2', text: '諦めずに練習した成果！', own: true },
+      { id: 'f3m3', text: 'かっこいい', own: false },
+    ]
+  },
+  { id: 'fw4', author: 'りな',   initials: 'り', text: '育休明け初日乗り越えた', hoursLeft: 6, expired: false,
+    messages: [
+      { id: 'f4m1', text: 'お疲れ様！', own: false },
+      { id: 'f4m2', text: 'よく頑張った', own: false },
+      { id: 'f4m3', text: '応援してるよ', own: true },
+      { id: 'f4m4', text: '無理しないでね', own: false },
+    ]
+  },
 ]
 
 const MOCK_FRIENDS = [
@@ -115,6 +141,11 @@ export default function FeedPage() {
   const [cheersSubView, setCheersSubView] = useState(null)
   const [notifSetting, setNotifSetting] = useState('all')
   const [, setFwTick] = useState(0)
+  const [msgSent, setMsgSent] = useState({})
+  const [msgModalOpen, setMsgModalOpen] = useState(false)
+  const [msgText, setMsgText] = useState('')
+  const [toast, setToast] = useState(null)
+  const [msgPaused, setMsgPaused] = useState(false)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -214,6 +245,17 @@ export default function FeedPage() {
     setPickerOpen(false)
     sendPosi()
   }
+
+  const handleSendMsg = () => {
+    if (!post || !msgText.trim()) return
+    setMsgSent(s => ({ ...s, [post.id]: true }))
+    setMsgModalOpen(false)
+    setMsgText('')
+    setToast('メッセージを送りました🎆')
+    setTimeout(() => setToast(null), 2000)
+  }
+
+  const hasSentMsg = post ? !!msgSent[post.id] : false
 
   const progress = post ? (post.posiCount / post.target) * 100 : 0
   const remaining = post ? post.target - post.posiCount : 0
@@ -579,6 +621,14 @@ export default function FeedPage() {
               </div>
             )}
           </div>
+
+          <button
+            style={{ ...S.msgBtn, ...(hasSentMsg ? S.msgBtnSent : {}) }}
+            disabled={hasSentMsg}
+            onClick={() => !hasSentMsg && setMsgModalOpen(true)}
+          >
+            {hasSentMsg ? '送信済み ✓' : '💬 花火が上がる前だけ送れます・20文字以内'}
+          </button>
         </div>
       )}
 
@@ -600,15 +650,71 @@ export default function FeedPage() {
       )}
 
       {fireworkModal && (
-        <div style={S.fwOverlay} onClick={() => setFireworkModal(null)}>
-          <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setFireworkModal(null) }}>×</button>
-          <div style={S.fwModalContent} onClick={e => e.stopPropagation()}>
+        <div style={S.fwOverlay} onClick={() => setMsgPaused(p => !p)}>
+          <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setFireworkModal(null); setMsgPaused(false) }}>×</button>
+
+          {(fireworkModal.messages || []).map((msg, i) => (
+            <div
+              key={msg.id}
+              className={msg.own ? 'msg-blink' : ''}
+              style={{
+                position: 'absolute',
+                top: `${12 + (i * 18) % 64}%`,
+                fontSize: 16,
+                fontWeight: 700,
+                color: msg.own ? '#f5601e' : '#fff',
+                opacity: msg.own ? 1 : 0.85,
+                whiteSpace: 'nowrap',
+                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                animationName: 'scrollMsg',
+                animationDuration: `${7 + i * 1.8}s`,
+                animationDelay: `${i * 1.0}s`,
+                animationTimingFunction: 'linear',
+                animationIterationCount: 'infinite',
+                animationPlayState: msgPaused ? 'paused' : 'running',
+                zIndex: 102,
+                pointerEvents: 'none',
+              }}
+            >
+              {msg.text}
+            </div>
+          ))}
+
+          <div style={S.fwModalContent}>
             <div className="posi-pop" style={{ fontSize: 72, textAlign: 'center' }}>🎆</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', margin: '16px 0 8px' }}>{fireworkModal.author}さん</div>
             <div style={{ fontSize: 15, color: '#ddd', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>{fireworkModal.text}</div>
             <div style={{ fontSize: 18, color: 'var(--orange)', fontWeight: 900, textAlign: 'center' }}>🎉 1,000 posi達成！</div>
           </div>
+
+          {msgPaused && (
+            <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'rgba(255,255,255,0.5)', pointerEvents: 'none' }}>タップで再開</div>
+          )}
         </div>
+      )}
+
+      {msgModalOpen && (
+        <div style={S.msgOverlay} onClick={() => setMsgModalOpen(false)}>
+          <div style={S.msgSheet} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>応援メッセージを送る</div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 14 }}>花火が上がる前だけ送れます（20文字以内・匿名）</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                style={S.msgInput}
+                maxLength={20}
+                placeholder="おめでとう！"
+                value={msgText}
+                onChange={e => setMsgText(e.target.value)}
+                autoFocus
+              />
+              <button style={S.msgSendBtn} onClick={handleSendMsg}>送る</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={S.toast}>{toast}</div>
       )}
 
       {postModal && (
@@ -629,7 +735,7 @@ const S = {
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'fixed', top: 120, bottom: 190, left: 0, right: 0, maxWidth: 480, margin: '0 auto', zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' },
+  screen: { position: 'fixed', top: 120, bottom: 250, left: 0, right: 0, maxWidth: 480, margin: '0 auto', zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' },
   centerWrap: { width: '100%' },
 
   authorFixed: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', zIndex: 2 },
@@ -716,6 +822,15 @@ const S = {
   notifToggleGroup: { display: 'flex', gap: 4 },
   notifToggleBtn: { fontSize: 11, fontWeight: 600, border: '1px solid var(--card-border)', borderRadius: 99, padding: '5px 10px', background: 'none', color: 'var(--text-sub)', cursor: 'pointer' },
   notifToggleBtnActive: { background: 'var(--orange)', borderColor: 'var(--orange)', color: '#fff' },
+
+  // 応援メッセージ
+  msgBtn: { width: '100%', background: 'var(--card-bg)', border: '1px solid var(--orange-border)', borderRadius: 9999, padding: '10px 14px', fontSize: 12, fontWeight: 600, color: 'var(--orange)', cursor: 'pointer', textAlign: 'center' },
+  msgBtnSent: { background: '#f5f5f5', borderColor: 'var(--card-border)', color: 'var(--text-sub)', cursor: 'default' },
+  msgOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 110, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  msgSheet: { background: 'var(--card-bg)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 },
+  msgInput: { flex: 1, border: '1.5px solid var(--card-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', fontFamily: 'inherit' },
+  msgSendBtn: { background: 'var(--orange)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 },
+  toast: { position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#1a1a2e', color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', borderRadius: 99, zIndex: 200, whiteSpace: 'nowrap' },
 
   // モーダル
   fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
