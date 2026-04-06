@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { db, auth } from './lib/firebase'
+import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 
 const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '🥹', '🎊', '🌈']
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
@@ -148,6 +151,7 @@ export default function FeedPage() {
   const [msgPaused, setMsgPaused] = useState(false)
   const [cheerEnergy, setCheerEnergy] = useState(15)
   const [shaking, setShaking] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -189,6 +193,50 @@ export default function FeedPage() {
       }
     }, 60000)
     return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user)
+      } else {
+        signInAnonymously(auth).catch(console.error)
+      }
+    })
+    return () => unsub()
+  }, [])
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(30))
+        const snap = await getDocs(q)
+        if (snap.empty) return
+        const formatTime = (date) => {
+          const mins = Math.floor((Date.now() - date) / 60000)
+          if (mins < 1) return 'たった今'
+          if (mins < 60) return `${mins}分前`
+          const h = Math.floor(mins / 60)
+          if (h < 24) return `${h}時間前`
+          return `${Math.floor(h / 24)}日前`
+        }
+        const loaded = snap.docs.map(d => ({
+          id: d.id,
+          author: d.data().authorName || '名無し',
+          initials: (d.data().authorName || '名')[0],
+          text: d.data().text || '',
+          posiCount: d.data().congratsCount || 0,
+          target: 1000,
+          time: d.data().createdAt?.toDate ? formatTime(d.data().createdAt.toDate()) : '今',
+          photo: d.data().imageUrl || null,
+        }))
+        setPosts(loaded)
+        setIdx(0)
+      } catch (e) {
+        console.error('Firestore load error:', e)
+      }
+    }
+    loadPosts()
   }, [])
 
   const post = posts[idx] ?? null
@@ -256,6 +304,9 @@ export default function FeedPage() {
     setPosts(ps => ps.map(p =>
       p.id === post.id ? { ...p, posiCount: Math.min(p.posiCount + 1, p.target) } : p
     ))
+    if (currentUser) {
+      updateDoc(doc(db, 'posts', post.id), { congratsCount: increment(1) }).catch(console.error)
+    }
   }
 
   const posiDown = (e) => {
@@ -288,11 +339,20 @@ export default function FeedPage() {
 
   const handleSendMsg = () => {
     if (!post || !msgText.trim()) return
+    const text = msgText.trim()
     setMsgSent(s => ({ ...s, [post.id]: true }))
     setMsgModalOpen(false)
     setMsgText('')
     setToast('メッセージを送りました🎆')
     setTimeout(() => setToast(null), 2000)
+    if (currentUser) {
+      addDoc(collection(db, 'messages'), {
+        postId: post.id,
+        senderId: currentUser.uid,
+        text,
+        createdAt: serverTimestamp(),
+      }).catch(console.error)
+    }
   }
 
   const hasSentMsg = post ? !!msgSent[post.id] : false
