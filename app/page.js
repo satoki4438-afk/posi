@@ -429,15 +429,16 @@ export default function FeedPage() {
 
   const AchievedCard = ({ p }) => (
     <div style={S.achievedHistCard} onClick={() => setPostModal(p)}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={S.histAvatar}>{p.initials}</div>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{p.author}</span>
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5, marginBottom: 8 }}>{p.text}</div>
-      <div style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 600, marginBottom: 6 }}>あなたの応援で花火が上がりました🎆</div>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>達成日 {p.achievedDate}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{p.posiCount.toLocaleString()} posi</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{p.author}</div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.text}</div>
+        </div>
+        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>{p.posiCount.toLocaleString()} posi</div>
+          <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>{p.achievedDate}</div>
+        </div>
       </div>
     </div>
   )
