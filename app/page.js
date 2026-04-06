@@ -146,6 +146,8 @@ export default function FeedPage() {
   const [msgText, setMsgText] = useState('')
   const [toast, setToast] = useState(null)
   const [msgPaused, setMsgPaused] = useState(false)
+  const [cheerEnergy, setCheerEnergy] = useState(15)
+  const [shaking, setShaking] = useState(false)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -158,6 +160,34 @@ export default function FeedPage() {
 
   useEffect(() => {
     const t = setInterval(() => setFwTick(n => n + 1), 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const RECOVERY_MS = 3600000
+    const stored = localStorage.getItem('cheerEnergy')
+    if (!stored) {
+      localStorage.setItem('cheerEnergy', JSON.stringify({ energy: 15, lastTime: Date.now() }))
+    } else {
+      let { energy, lastTime } = JSON.parse(stored)
+      const recovered = Math.floor((Date.now() - lastTime) / RECOVERY_MS)
+      if (recovered > 0) {
+        energy = Math.min(energy + recovered, 15)
+        lastTime += recovered * RECOVERY_MS
+        localStorage.setItem('cheerEnergy', JSON.stringify({ energy, lastTime }))
+      }
+      setCheerEnergy(energy)
+    }
+    const t = setInterval(() => {
+      const s = JSON.parse(localStorage.getItem('cheerEnergy') || '{}')
+      if (!s.lastTime) return
+      const recovered = Math.floor((Date.now() - s.lastTime) / RECOVERY_MS)
+      if (recovered > 0) {
+        const newEnergy = Math.min(s.energy + recovered, 15)
+        localStorage.setItem('cheerEnergy', JSON.stringify({ energy: newEnergy, lastTime: s.lastTime + recovered * RECOVERY_MS }))
+        setCheerEnergy(newEnergy)
+      }
+    }, 60000)
     return () => clearInterval(t)
   }, [])
 
@@ -199,6 +229,16 @@ export default function FeedPage() {
 
   const sendPosi = () => {
     if (!post || sent[post.id]) return
+    if (cheerEnergy <= 0) {
+      setShaking(true)
+      setTimeout(() => setShaking(false), 400)
+      return
+    }
+    const newEnergy = cheerEnergy - 1
+    setCheerEnergy(newEnergy)
+    const stored = JSON.parse(localStorage.getItem('cheerEnergy') || `{"energy":15,"lastTime":${Date.now()}}`)
+    stored.energy = newEnergy
+    localStorage.setItem('cheerEnergy', JSON.stringify(stored))
     setPopping(true)
     setTimeout(() => setPopping(false), 380)
     const count = 3 + Math.floor(Math.random() * 3)
@@ -601,8 +641,8 @@ export default function FeedPage() {
 
           <div style={{ position: 'relative' }}>
             <button
-              className={popping ? 'posi-pop' : ''}
-              style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : {}) }}
+              className={popping ? 'posi-pop' : shaking ? 'posi-shake' : ''}
+              style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : cheerEnergy <= 0 ? S.posiBtnNoEnergy : {}) }}
               onMouseDown={posiDown}
               onMouseUp={posiUp}
               onTouchStart={posiDown}
@@ -627,12 +667,14 @@ export default function FeedPage() {
             disabled={hasSentMsg}
             onClick={() => !hasSentMsg && setMsgModalOpen(true)}
           >
-            {hasSentMsg ? '送信済み ✓' : '💬 花火が上がる前だけ送れます・20文字以内'}
+            {hasSentMsg ? '✉️ 送信済み ✓' : '✉️ 花火が上がる前だけ送れます'}
           </button>
         </div>
       )}
 
-      <nav style={S.nav}>
+      <div style={S.cheersMeter}>⚡ {cheerEnergy} / 15</div>
+
+      <nav style={{ ...S.nav, borderTop: 'none' }}>
         {navTab('home', '🏠')}
         {navTab('goal', '🎯')}
         <button style={S.postTab} onClick={() => setActiveTab('post')}>
@@ -753,7 +795,7 @@ const S = {
 
   floatingEmoji: { position: 'absolute', bottom: 90, fontSize: 36, zIndex: 10, pointerEvents: 'none' },
 
-  bottomFixed: { position: 'fixed', bottom: 64, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 20 },
+  bottomFixed: { position: 'fixed', bottom: 90, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 20 },
   indicator: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 16px' },
   indicatorLabel: { fontSize: 15, color: 'var(--orange)', fontWeight: 700 },
   bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
@@ -761,6 +803,8 @@ const S = {
 
   posiBtn: { width: '100%', background: 'var(--orange-dark)', border: 'none', borderRadius: 9999, padding: '23px', fontSize: 20, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(217,79,26,0.45)', letterSpacing: '0.5px' },
   posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
+  posiBtnNoEnergy: { background: '#ccc', boxShadow: 'none', cursor: 'not-allowed' },
+  cheersMeter: { textAlign: 'center', padding: '5px 0 4px', fontSize: 13, fontWeight: 800, color: 'var(--text-sub)', background: 'var(--card-bg)', borderTop: '0.5px solid var(--card-border)', flexShrink: 0 },
   picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },
 

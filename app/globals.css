@@ -64,6 +64,15 @@
   animation: msgBlink 1.2s ease-in-out infinite;
 }
 
+@keyframes posiShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-3px); }
+  80%     { transform: translateX(3px); }
+}
+.posi-shake { animation: posiShake 0.38s ease; }
+
 *,
 *::before,
 *::after {
