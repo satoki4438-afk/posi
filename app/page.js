@@ -211,7 +211,10 @@ export default function FeedPage() {
       try {
         const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(30))
         const snap = await getDocs(q)
-        if (snap.empty) return
+        if (snap.empty) {
+          setPosts([])
+          return
+        }
         const formatTime = (date) => {
           const mins = Math.floor((Date.now() - date) / 60000)
           if (mins < 1) return 'たった今'
