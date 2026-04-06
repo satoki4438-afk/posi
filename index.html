@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Posi – 世界中のおめでとうが集まる場所</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #F5EFE6;
+    --surface:   #FFFBF5;
+    --white:     #FFFFFF;
+    --primary:   #D4622A;
+    --primary-l: #F5A06E;
+    --primary-ll:#FDF0E6;
+    --text:      #3A2820;
+    --text-s:    #8C7060;
+    --text-xs:   #C0A080;
+    --border:    rgba(180,140,100,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── MAIN APP ─── */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ─── HEADER ─── */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+  }
+
+  .header-inner {
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: flex-start;
+    gap: 3px;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .header-logo-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-l), var(--primary));
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── 元気玉カウンター ─── */
+  .genki-bar {
+    padding: 14px 20px;
+  }
+
+  .genki-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px 18px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .genki-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .genki-label-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .genki-count-text {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+
+  .genki-track {
+    height: 8px;
+    background: var(--primary-ll);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .genki-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-l), var(--primary));
+    border-radius: 99px;
+    transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    width: 0%;
+  }
+
+  .genki-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-xs);
+  }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 10px 20px 0;
+    gap: 8px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-s);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 800;
+  }
+
+  /* ─── FEED / POST VIEW ─── */
+  #feed-view, #post-view {
+    flex: 1;
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  #post-view { display: none; }
+
+  /* ─── CARD STACK ─── */
+  .card-stack {
+    position: relative;
+    height: 460px;
+    margin-bottom: 24px;
+  }
+
+  .post-card {
+    position: absolute;
+    inset: 0;
+    background: var(--white);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.35s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .post-card.swiping { transition: none; }
+
+  .post-card.swipe-out-right {
+    transform: translateX(120%) rotate(15deg);
+    opacity: 0;
+  }
+
+  .post-card.swipe-out-left {
+    transform: translateX(-120%) rotate(-15deg);
+    opacity: 0;
+  }
+
+  .card-bg-next {
+    transform: scale(0.94) translateY(12px);
+    opacity: 1;
+    z-index: 0;
+    background: var(--primary-ll);
+    border-color: transparent;
+  }
+
+  .post-card:first-child { z-index: 2; }
+
+  .card-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-ll);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    width: fit-content;
+  }
+
+  .card-category-dot {
+    width: 5px;
+    height: 5px;
+    background: var(--primary);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .card-text {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.5;
+    color: var(--text);
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 14px;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-congrats-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-s);
+  }
+
+  .card-congrats-count span {
+    font-weight: 800;
+    color: var(--primary);
+    font-size: 18px;
+  }
+
+  /* ─── おめでとうボタン ─── */
+  .btn-congrats {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 99px;
+    padding: 10px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-congrats:active {
+    transform: scale(0.95);
+    background: var(--primary-l);
+  }
+
+  .btn-congrats.no-energy {
+    background: var(--text-xs);
+    cursor: not-allowed;
+  }
+
+  .btn-congrats.no-energy:active {
+    transform: none;
+    background: var(--text-xs);
+  }
+
+  .btn-congrats.popped {
+    animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-5px); }
+    40%     { transform: translateX(5px); }
+    60%     { transform: translateX(-3px); }
+    80%     { transform: translateX(3px); }
+  }
+
+  .btn-congrats.shake { animation: shake 0.35s ease; }
+
+  /* ─── 応援メッセージボタン ─── */
+  .btn-message {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px dashed rgba(180,140,100,0.35);
+    border-radius: 12px;
+    background: transparent;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-s);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    text-align: center;
+  }
+
+  .btn-message:hover:not(:disabled) {
+    border-color: var(--primary-l);
+    color: var(--primary);
+  }
+
+  .btn-message.sent {
+    border-style: solid;
+    border-color: var(--border);
+    color: var(--text-xs);
+    cursor: default;
+  }
+
+  /* ─── Cheersエネルギーメーター ─── */
+  .cheers-meter {
+    text-align: center;
+    padding: 6px 0 0;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-s);
+    letter-spacing: 0.3px;
+  }
+
+  /* ─── SWIPE HINT ─── */
+  .swipe-hint {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-xs);
+    margin-top: 8px;
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-s);
+  }
+
+  .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 15px; line-height: 1.7; font-weight: 600; }
+
+  /* ─── POST FORM ─── */
+  .post-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-s);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .form-hint {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-s);
+    margin-bottom: 8px;
+    display: block;
+    line-height: 1.6;
+  }
+
+  .form-textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--white);
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+
+  .form-textarea:focus { border-color: var(--primary-l); }
+
+  .char-count {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-xs);
+    margin-top: 4px;
+  }
+
+  .char-count.over { color: var(--primary); }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .category-btn {
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--white);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+
+  .category-btn:hover { border-color: var(--primary-l); }
+
+  .category-btn.selected {
+    border-color: var(--primary);
+    background: var(--primary-ll);
+    color: var(--primary);
+    font-weight: 800;
+  }
+
+  .btn-submit {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 99px;
+    padding: 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-submit:not(:disabled):active { transform: scale(0.97); }
+
+  /* ─── 花火 ─── */
+  #fireworks-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  #fireworks-overlay.active { display: block; }
+
+  .firework-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Nunito', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    text-align: center;
+    animation: fadeInOut 3s ease forwards;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  @keyframes fadeInOut {
+    0%  { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; }
+    100%{ opacity: 0; }
+  }
+
+  canvas#fireworks-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 99px;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ─── BOTTOM NAV WRAPPER ─── */
+  .bottom-nav-wrap {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .bottom-nav {
+    display: flex;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 6px 0 10px;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 8px 14px 4px;
+    border: none;
+    background: transparent;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-s);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: color 0.2s;
+    position: relative;
+  }
+
+  .nav-btn svg { transition: stroke 0.2s; }
+  .nav-btn.active { color: var(--primary); }
+  .nav-btn.active svg { stroke: var(--primary); }
+
+  .nav-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    background: var(--primary);
+    border-radius: 50%;
+  }
+
+  .nav-icon { display: flex; align-items: center; justify-content: center; }
+
+  /* ─── LOADING ─── */
+  .loading {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--primary-ll);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .loading-wrap { text-align: center; padding: 60px 20px; }
+
+  /* ─── LOGIN MODAL ─── */
+  #login-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(58,40,32,0.45);
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .login-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 32px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+  }
+
+  .login-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .login-sub {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-s);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text-s);
+    line-height: 1;
+    padding: 4px;
+    font-weight: 700;
+  }
+
+  .btn-google {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 99px;
+    padding: 16px 32px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .btn-google:hover { transform: translateY(-2px); }
+  .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-s);
+  }
+
+  .auth-divider::before, .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .email-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+    display: block;
+    box-sizing: border-box;
+  }
+
+  .email-input:focus { border-color: var(--primary-l); }
+
+  .auth-btn-row { display: flex; gap: 10px; margin-top: 10px; }
+
+  .btn-auth-sub {
+    flex: 1;
+    padding: 12px;
+    border-radius: 99px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .btn-auth-sub:active { transform: scale(0.97); }
+
+  .btn-auth-login {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+  }
+
+  .btn-auth-signup {
+    background: transparent;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+
+  #auth-error {
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 10px;
+    min-height: 18px;
+    line-height: 1.5;
+  }
+
+  /* ─── PROFILE VIEW ─── */
+  #profile-view {
+    display: none;
+    flex: 1;
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 40px;
+  }
+
+  .challenge-days {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--primary);
+    margin-top: 6px;
+  }
+
+  .btn-signout {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 99px;
+    padding: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-s);
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .btn-signout:hover { border-color: var(--primary); color: var(--primary); }
+
+  .profile-section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN MODAL ── -->
+<div id="login-modal">
+  <div class="login-card">
+    <button class="modal-close" onclick="hideLoginModal()">✕</button>
+    <div style="margin-bottom:12px;display:flex;justify-content:center">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="17" stroke="#D4622A" stroke-width="1.5"/>
+        <path d="M11 18l5 5 9-9" stroke="#D4622A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="login-title">ログインして投稿しよう</div>
+    <div class="login-sub">投稿・プロフィールにはログインが必要です<br>見る・おめでとうはログイン不要</div>
+    <button class="btn-google" id="btn-login-google" style="width:100%;justify-content:center">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Googleでログイン
+    </button>
+    <div class="auth-divider">または</div>
+    <input type="email" class="email-input" id="email-input" placeholder="メールアドレス" autocomplete="email">
+    <input type="password" class="email-input" id="password-input" placeholder="パスワード（6文字以上）" autocomplete="current-password">
+    <div class="auth-btn-row">
+      <button class="btn-auth-sub btn-auth-login" id="btn-email-login">ログイン</button>
+      <button class="btn-auth-sub btn-auth-signup" id="btn-email-signup">新規登録</button>
+    </div>
+    <div id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-logo">
+        posi<span class="header-logo-dot"></span>
+      </div>
+      <div id="user-avatar" class="user-avatar"></div>
+      <div style="display:none" id="user-name"></div>
+    </div>
+  </div>
+
+  <!-- 元気玉 -->
+  <div class="genki-bar">
+    <div class="genki-card">
+      <div class="genki-label">
+        <span class="genki-label-text">みんなのおめでとう</span>
+        <span class="genki-count-text"><span id="genki-now">0</span></span>
+      </div>
+      <div class="genki-track">
+        <div class="genki-fill" id="genki-fill"></div>
+      </div>
+      <div class="genki-sub">あと<span id="genki-remaining">...</span>で花火があがる</div>
+    </div>
+    <!-- hidden: keep genki-next in DOM for JS compatibility -->
+    <span id="genki-next" style="display:none">1000</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="feed">みんなの達成</button>
+    <button class="tab" data-tab="post">投稿する</button>
+  </div>
+
+  <!-- Feed View -->
+  <div id="feed-view">
+    <div class="loading-wrap"><span class="loading"></span></div>
+  </div>
+
+  <!-- Post View -->
+  <div id="post-view">
+    <div class="post-form">
+      <div>
+        <label class="form-label">達成したこと・嬉しかったこと</label>
+        <span class="form-hint">「今日早起きできた」「禁煙3日目」小さな勝ちも大歓迎！<br>※宣言・意思表明はNG（達成した事実を書いてね）</span>
+        <textarea class="form-textarea" id="post-text" rows="3" maxlength="50" placeholder="例：宅建合格した！"></textarea>
+        <div class="char-count"><span id="char-now">0</span>/50</div>
+      </div>
+      <div>
+        <label class="form-label">カテゴリ</label>
+        <div class="category-grid" id="category-grid">
+          <button class="category-btn" data-cat="📚 資格・勉強">📚 資格・勉強</button>
+          <button class="category-btn" data-cat="👶 家族・育児">👶 家族・育児</button>
+          <button class="category-btn" data-cat="💪 健康・ダイエット">💪 健康・ダイエット</button>
+          <button class="category-btn" data-cat="💼 仕事・起業">💼 仕事・起業</button>
+          <button class="category-btn" data-cat="🏆 スポーツ・大会">🏆 スポーツ・大会</button>
+          <button class="category-btn" data-cat="🎵 趣味・創作">🎵 趣味・創作</button>
+          <button class="category-btn" data-cat="❤️ 恋愛・結婚">❤️ 恋愛・結婚</button>
+          <button class="category-btn" data-cat="🌱 その他の達成">🌱 その他の達成</button>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">写真（任意）</label>
+        <label id="photo-label" style="display:flex;align-items:center;gap:10px;border:1.5px dashed var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:border-color 0.2s">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-xs)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span id="photo-label-text" style="font-size:13px;font-weight:600;color:var(--text-s)">タップして写真を選ぶ</span>
+          <input type="file" id="photo-input" accept="image/*" style="display:none">
+        </label>
+        <img id="photo-preview" style="display:none;width:100%;border-radius:14px;margin-top:10px;max-height:200px;object-fit:cover">
+      </div>
+      <button class="btn-submit" id="btn-submit" disabled>おめでとうをもらう</button>
+    </div>
+  </div>
+
+  <!-- Profile View -->
+  <div id="profile-view">
+    <div class="profile-form">
+      <div>
+        <label class="form-label">名前</label>
+        <span class="form-hint">匿名でもOK</span>
+        <input type="text" id="profile-name" class="form-textarea" placeholder="あなたの名前" maxlength="30" style="height:auto;padding:12px 16px;display:block;width:100%">
+      </div>
+      <div>
+        <label class="form-label">今挑戦してること</label>
+        <span class="form-hint">任意・50文字以内</span>
+        <textarea id="profile-challenge" class="form-textarea" rows="2" maxlength="50" placeholder="例：宅建取る"></textarea>
+        <div class="char-count"><span id="challenge-char-now">0</span>/50</div>
+      </div>
+      <div>
+        <label class="form-label">開始日付</label>
+        <input type="date" id="profile-start-date" class="form-textarea" style="height:auto;padding:12px 16px;display:block;width:100%">
+        <div class="challenge-days" id="days-elapsed"></div>
+      </div>
+      <button class="btn-submit" id="btn-save-profile">保存する</button>
+      <div>
+        <div class="profile-section-title">自分の達成履歴</div>
+        <div id="my-posts-list"></div>
+      </div>
+      <button class="btn-signout" id="btn-signout">ログアウト</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav-wrap">
+    <div class="cheers-meter" id="cheers-meter">⚡ 15 / 15</div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" data-tab="feed">
+        <span class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        ホーム
+      </button>
+      <button class="nav-btn" data-tab="post">
+        <span class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </span>
+        投稿
+      </button>
+      <button class="nav-btn" data-tab="profile">
+        <span class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        プロフィール
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 花火 -->
+<div id="fireworks-overlay">
+  <canvas id="fireworks-canvas"></canvas>
+  <div class="firework-msg" id="firework-msg">🎆 1,000おめでとう達成！</div>
+</div>
+
+<!-- 応援メッセージ ダイアログ -->
+<div id="message-modal" style="display:none;position:fixed;inset:0;background:rgba(58,40,32,0.45);z-index:9000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:24px;padding:28px 24px;max-width:360px;width:100%">
+    <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">応援メッセージを送る</div>
+    <div style="font-size:12px;font-weight:600;color:var(--text-xs);margin-bottom:16px">花火が上がる瞬間に届きます 🎆</div>
+    <textarea id="message-input" maxlength="20" rows="3" class="form-textarea" placeholder="応援の言葉（20文字以内）"></textarea>
+    <div class="char-count"><span id="msg-char-now">0</span>/20</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="closeMessageDialog()" style="flex:1;padding:14px;border-radius:99px;border:1.5px solid var(--border);background:transparent;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--text-s);cursor:pointer">キャンセル</button>
+      <button id="btn-send-message" style="flex:1;padding:14px;border-radius:99px;border:none;background:var(--primary);color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer">送る</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, increment, orderBy, query, limit, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD0AjExnUYpD6WUgvDz0ZRRryMXBiYTw8s",
+  authDomain: "posi-b6621.firebaseapp.com",
+  projectId: "posi-b6621",
+  storageBucket: "posi-b6621.firebasestorage.app",
+  messagingSenderId: "53292920656",
+  appId: "1:53292920656:web:603e44183a134754274655"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ── STATE ──
+let currentUser = null;
+let posts = [];
+let currentCardIndex = 0;
+let selectedCategory = null;
+let pendingTab = null;
+const MILESTONES = [1000, 2000, 5000, 10000];
+const messageSentPosts = new Set();
+let activeMessagePostId = null;
+
+// ── CHEERS ENERGY ──
+const CHEERS_MAX = 15;
+const CHEERS_RECOVERY_MS = 60 * 60 * 1000;
+
+function loadAndRecoverCheerEnergy() {
+  const stored = localStorage.getItem('cheerEnergy');
+  if (!stored) {
+    localStorage.setItem('cheerEnergy', JSON.stringify({ energy: CHEERS_MAX, lastTime: Date.now() }));
+    return CHEERS_MAX;
+  }
+  let { energy, lastTime } = JSON.parse(stored);
+  const recovered = Math.floor((Date.now() - lastTime) / CHEERS_RECOVERY_MS);
+  if (recovered > 0) {
+    energy = Math.min(energy + recovered, CHEERS_MAX);
+    lastTime += recovered * CHEERS_RECOVERY_MS;
+    localStorage.setItem('cheerEnergy', JSON.stringify({ energy, lastTime }));
+  }
+  return energy;
+}
+
+let cheerEnergy = loadAndRecoverCheerEnergy();
+
+function updateCheersMeter() {
+  document.getElementById('cheers-meter').textContent = `⚡ ${cheerEnergy} / ${CHEERS_MAX}`;
+}
+
+function spendCheerEnergy() {
+  cheerEnergy = Math.max(0, cheerEnergy - 1);
+  const stored = JSON.parse(localStorage.getItem('cheerEnergy'));
+  stored.energy = cheerEnergy;
+  localStorage.setItem('cheerEnergy', JSON.stringify(stored));
+  updateCheersMeter();
+  updateCongratsButtons();
+}
+
+function updateCongratsButtons() {
+  document.querySelectorAll('.btn-congrats').forEach(btn => {
+    btn.classList.toggle('no-energy', cheerEnergy <= 0);
+  });
+}
+
+setInterval(() => {
+  const newEnergy = loadAndRecoverCheerEnergy();
+  if (newEnergy !== cheerEnergy) {
+    cheerEnergy = newEnergy;
+    updateCheersMeter();
+    updateCongratsButtons();
+  }
+}, 60000);
+
+// ── LOGIN MODAL ──
+function showLoginModal() {
+  document.getElementById('login-modal').style.display = 'flex';
+  document.getElementById('auth-error').textContent = '';
+}
+window.hideLoginModal = function() {
+  document.getElementById('login-modal').style.display = 'none';
+  pendingTab = null;
+};
+
+// ── TOAST ──
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── MESSAGE DIALOG ──
+window.openMessageDialog = function(postId) {
+  activeMessagePostId = postId;
+  document.getElementById('message-input').value = '';
+  document.getElementById('msg-char-now').textContent = '0';
+  document.getElementById('message-modal').style.display = 'flex';
+};
+
+window.closeMessageDialog = function() {
+  document.getElementById('message-modal').style.display = 'none';
+  activeMessagePostId = null;
+};
+
+document.getElementById('message-input').addEventListener('input', () => {
+  document.getElementById('msg-char-now').textContent = document.getElementById('message-input').value.length;
+});
+
+document.getElementById('btn-send-message').addEventListener('click', async () => {
+  const text = document.getElementById('message-input').value.trim();
+  if (!text || !activeMessagePostId) return;
+  const postId = activeMessagePostId;
+  closeMessageDialog();
+  await addDoc(collection(db, 'messages'), {
+    postId,
+    senderId: currentUser ? currentUser.uid : null,
+    text,
+    createdAt: serverTimestamp()
+  });
+  messageSentPosts.add(postId);
+  renderFeed();
+  showToast('メッセージを送りました🎆', 2000);
+});
+
+// ── 元気玉 ──
+async function loadGenki() {
+  const ref = doc(db, 'meta', 'genki');
+  const snap = await getDoc(ref);
+  const count = snap.exists() ? (snap.data().congratsCount || 0) : 0;
+  updateGenkiUI(count);
+}
+
+function updateGenkiUI(count) {
+  const next = MILESTONES.find(m => m > count) || MILESTONES[MILESTONES.length - 1];
+  const prev = MILESTONES[MILESTONES.indexOf(next) - 1] || 0;
+  const pct = Math.min(((count - prev) / (next - prev)) * 100, 100);
+  document.getElementById('genki-now').textContent = count.toLocaleString();
+  document.getElementById('genki-next').textContent = next.toLocaleString();
+  document.getElementById('genki-fill').style.width = pct + '%';
+  document.getElementById('genki-remaining').textContent = (next - count).toLocaleString();
+}
+
+async function incrementGenki() {
+  const ref = doc(db, 'meta', 'genki');
+  const snap = await getDoc(ref);
+  const before = snap.exists() ? (snap.data().congratsCount || 0) : 0;
+  const after = before + 1;
+  await setDoc(ref, { congratsCount: after }, { merge: true });
+  updateGenkiUI(after);
+
+  // 花火チェック
+  if (MILESTONES.includes(after)) {
+    triggerFireworks(after);
+  }
+}
+
+// ── 花火 ──
+function triggerFireworks(milestone) {
+  const overlay = document.getElementById('fireworks-overlay');
+  const msg = document.getElementById('firework-msg');
+  msg.textContent = `🎆 ${milestone.toLocaleString()}おめでとう達成！`;
+  overlay.classList.add('active');
+  launchFireworks();
+  setTimeout(() => overlay.classList.remove('active'), 5000);
+}
+
+function launchFireworks() {
+  const canvas = document.getElementById('fireworks-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ['#D4622A','#F5A06E','#FFD700','#FF69B4','#87CEEB','#98FB98'];
+
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height * 0.6;
+      for (let j = 0; j < 60; j++) {
+        const angle = (j / 60) * Math.PI * 2;
+        const speed = 2 + Math.random() * 5;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: 2 + Math.random() * 3
+        });
+      }
+    }, i * 400);
+  }
+
+  function animate() {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.08;
+      p.life -= 0.018;
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (particles.some(p => p.life > 0)) requestAnimationFrame(animate);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  animate();
+}
+
+// ── POSTS LOAD ──
+async function loadPosts() {
+  const feedView = document.getElementById('feed-view');
+  feedView.innerHTML = '<div class="loading-wrap"><span class="loading"></span></div>';
+
+  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(20));
+  const snap = await getDocs(q);
+  posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  currentCardIndex = 0;
+  renderFeed();
+}
+
+const STAR_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+
+function renderFeed() {
+  const feedView = document.getElementById('feed-view');
+
+  if (posts.length === 0) {
+    feedView.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🌱</div>
+        <p>まだ投稿がないよ<br>最初の達成を投稿してみよう！</p>
+      </div>`;
+    return;
+  }
+
+  const remaining = posts.slice(currentCardIndex, currentCardIndex + 2);
+  if (remaining.length === 0) {
+    feedView.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🎉</div>
+        <p>全部チェックしたよ！<br>また後で見てみてね</p>
+      </div>`;
+    return;
+  }
+
+  let html = '<div class="card-stack">';
+  remaining.forEach((post, i) => {
+    const cls = i === 0 ? '' : 'card-bg-next';
+    html += `
+      <div class="post-card ${cls}" data-id="${post.id}">
+        <div class="card-category"><span class="card-category-dot"></span>${post.category || '🌱 その他の達成'}</div>
+        ${post.imageUrl ? `<img class="card-image" src="${post.imageUrl}">` : ''}
+        <div class="card-text">${escapeHtml(post.text)}</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="card-footer">
+            <div class="card-congrats-count"><span>${(post.congratsCount || 0).toLocaleString()}</span> おめでとう</div>
+            <button class="btn-congrats${cheerEnergy <= 0 ? ' no-energy' : ''}" onclick="sendCongrats('${post.id}', this)">${STAR_SVG}おめでとう</button>
+          </div>
+          <button class="btn-message${messageSentPosts.has(post.id) ? ' sent' : ''}" ${messageSentPosts.has(post.id) ? 'disabled' : `onclick="openMessageDialog('${post.id}')"`}>${messageSentPosts.has(post.id) ? '✉️ 送信済み ✓' : '✉️ 花火が上がる前だけ送れます'}</button>
+        </div>
+      </div>`;
+  });
+  html += '</div><div class="swipe-hint">← スワイプで次の投稿 →</div>';
+  feedView.innerHTML = html;
+
+  // スワイプ設定
+  const card = feedView.querySelector('.post-card:first-child');
+  if (card) setupSwipe(card);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── SWIPE ──
+function setupSwipe(card) {
+  let startX = 0, currentX = 0, isDragging = false;
+
+  const onStart = (e) => {
+    isDragging = true;
+    startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    card.classList.add('swiping');
+  };
+  const onMove = (e) => {
+    if (!isDragging) return;
+    currentX = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - startX;
+    card.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.05}deg)`;
+  };
+  const onEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('swiping');
+    if (Math.abs(currentX) > 80) {
+      card.classList.add(currentX > 0 ? 'swipe-out-right' : 'swipe-out-left');
+      setTimeout(() => { currentCardIndex++; renderFeed(); }, 300);
+    } else {
+      card.style.transform = '';
+    }
+    currentX = 0;
+  };
+
+  card.addEventListener('mousedown', onStart);
+  card.addEventListener('touchstart', onStart, { passive: true });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: true });
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+// ── CONGRATS ──
+window.sendCongrats = async (postId, btn) => {
+  if (cheerEnergy <= 0) {
+    btn.classList.add('shake');
+    setTimeout(() => btn.classList.remove('shake'), 400);
+    return;
+  }
+  btn.classList.add('popped');
+  btn.disabled = true;
+  setTimeout(() => btn.classList.remove('popped'), 400);
+  spendCheerEnergy();
+
+  const ref = doc(db, 'posts', postId);
+  await updateDoc(ref, { congratsCount: increment(1) });
+  await incrementGenki();
+
+  // カード上のカウント更新
+  const countEl = btn.closest('.post-card').querySelector('.card-congrats-count span');
+  if (countEl) countEl.textContent = (parseInt(countEl.textContent.replace(',','')) + 1).toLocaleString();
+
+  showToast('おめでとうを送ったよ 🎉');
+
+  setTimeout(() => { currentCardIndex++; renderFeed(); }, 600);
+};
+
+// ── POST FORM ──
+const postText = document.getElementById('post-text');
+const charNow = document.getElementById('char-now');
+const btnSubmit = document.getElementById('btn-submit');
+
+postText.addEventListener('input', () => {
+  const len = postText.value.length;
+  charNow.textContent = len;
+  charNow.parentElement.classList.toggle('over', len >= 50);
+  checkSubmit();
+});
+
+document.getElementById('category-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.category-btn');
+  if (!btn) return;
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedCategory = btn.dataset.cat;
+  checkSubmit();
+});
+
+function checkSubmit() {
+  btnSubmit.disabled = !(postText.value.trim().length > 0 && selectedCategory);
+}
+
+// ── PHOTO PREVIEW ──
+document.getElementById('photo-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('photo-label-text').textContent = file.name;
+  document.getElementById('photo-label').style.borderColor = 'var(--primary-l)';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const preview = document.getElementById('photo-preview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  if (!currentUser) { pendingTab = 'post'; showLoginModal(); return; }
+  const text = postText.value.trim();
+  if (!text || !selectedCategory) return;
+
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = '投稿中...';
+
+  try {
+    // 写真アップロード
+    let imageUrl = null;
+    const file = document.getElementById('photo-input').files[0];
+    if (file) {
+      btnSubmit.textContent = '写真をアップロード中...';
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const storageRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}_${safeName}`);
+      await uploadBytes(storageRef, file);
+      imageUrl = await getDownloadURL(storageRef);
+    }
+
+    await addDoc(collection(db, 'posts'), {
+      userId: currentUser.uid,
+      text,
+      category: selectedCategory,
+      congratsCount: 0,
+      imageUrl,
+      createdAt: serverTimestamp(),
+      reported: false
+    });
+
+    postText.value = '';
+    charNow.textContent = '0';
+    selectedCategory = null;
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('photo-input').value = '';
+    document.getElementById('photo-label-text').textContent = 'タップして写真を選ぶ';
+    document.getElementById('photo-label').style.borderColor = '';
+    document.getElementById('photo-preview').style.display = 'none';
+    showToast('投稿したよ！おめでとうが届くの待ってて 🎉');
+
+    switchTab('feed');
+    await loadPosts();
+  } catch (e) {
+    showToast('投稿に失敗しました。もう一度試してね');
+    console.error(e);
+  }
+
+  btnSubmit.disabled = false;
+  btnSubmit.textContent = 'おめでとうをもらう';
+});
+
+// ── TABS ──
+function switchTab(tab) {
+  if ((tab === 'post' || tab === 'profile') && !currentUser) {
+    pendingTab = tab;
+    showLoginModal();
+    return;
+  }
+  document.querySelectorAll('.tab, .nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('feed-view').style.display = tab === 'feed' ? 'block' : 'none';
+  document.getElementById('post-view').style.display = tab === 'post' ? 'block' : 'none';
+  document.getElementById('profile-view').style.display = tab === 'profile' ? 'block' : 'none';
+  if (tab === 'profile') loadProfile();
+}
+
+document.querySelectorAll('.tab, .nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+// ── PROFILE ──
+async function loadProfile() {
+  if (!currentUser) return;
+  const userRef = doc(db, 'users', currentUser.uid);
+  const snap = await getDoc(userRef);
+  const data = snap.exists() ? snap.data() : {};
+  document.getElementById('profile-name').value = data.displayName || currentUser.displayName || '';
+  const challenge = data.challenge || {};
+  const ct = challenge.text || '';
+  document.getElementById('profile-challenge').value = ct;
+  document.getElementById('challenge-char-now').textContent = ct.length;
+  if (challenge.startedAt) {
+    const d = challenge.startedAt.toDate ? challenge.startedAt.toDate() : new Date(challenge.startedAt.seconds * 1000);
+    document.getElementById('profile-start-date').value = d.toISOString().split('T')[0];
+    updateDaysElapsed(d);
+  } else {
+    document.getElementById('profile-start-date').value = '';
+    document.getElementById('days-elapsed').textContent = '';
+  }
+  await loadMyPosts();
+}
+
+function updateDaysElapsed(startDate) {
+  const days = Math.floor((new Date() - startDate) / 86400000);
+  document.getElementById('days-elapsed').textContent = days >= 1 ? `${days}日目` : '今日スタート！';
+}
+
+async function loadMyPosts() {
+  const listEl = document.getElementById('my-posts-list');
+  listEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-s);font-size:14px;font-weight:600">読み込み中...</div>';
+  try {
+    const q = query(collection(db, 'posts'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'), limit(20));
+    const snap = await getDocs(q);
+    const myPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (myPosts.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;color:var(--text-s);padding:20px;font-size:14px;font-weight:600">まだ投稿がないよ</div>';
+      return;
+    }
+    listEl.innerHTML = myPosts.map(post => `
+      <div style="background:var(--white);border-radius:18px;border:1px solid var(--border);padding:16px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--text-xs);margin-bottom:6px;font-weight:700">${post.category || ''}</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text)">${escapeHtml(post.text)}</div>
+        <div style="font-size:12px;color:var(--primary);margin-top:8px;font-weight:800">${(post.congratsCount || 0).toLocaleString()} おめでとう</div>
+      </div>`).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--text-s);padding:20px;font-size:14px;font-weight:600">取得できませんでした</div>';
+    console.error(e);
+  }
+}
+
+document.getElementById('btn-save-profile').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const name = document.getElementById('profile-name').value.trim();
+  const challengeText = document.getElementById('profile-challenge').value.trim();
+  const startDateStr = document.getElementById('profile-start-date').value;
+  const userRef = doc(db, 'users', currentUser.uid);
+  await setDoc(userRef, {
+    displayName: name,
+    challenge: {
+      text: challengeText || null,
+      startedAt: startDateStr ? new Date(startDateStr + 'T00:00:00') : null
+    }
+  }, { merge: true });
+  if (name) {
+    document.getElementById('user-name').textContent = name;
+    const avatarEl = document.getElementById('user-avatar');
+    avatarEl.textContent = name[0].toUpperCase();
+  }
+  showToast('プロフィールを保存したよ 🎉');
+});
+
+document.getElementById('profile-challenge').addEventListener('input', () => {
+  document.getElementById('challenge-char-now').textContent = document.getElementById('profile-challenge').value.length;
+});
+
+document.getElementById('profile-start-date').addEventListener('change', e => {
+  e.target.value ? updateDaysElapsed(new Date(e.target.value + 'T00:00:00')) : (document.getElementById('days-elapsed').textContent = '');
+});
+
+document.getElementById('btn-signout').addEventListener('click', async () => {
+  await signOut(auth);
+  currentUser = null;
+  document.getElementById('user-name').textContent = '';
+  const avatarEl = document.getElementById('user-avatar');
+  avatarEl.textContent = '';
+  avatarEl.style.display = 'none';
+  showToast('ログアウトしました');
+  switchTab('feed');
+});
+
+// ── AUTH ──
+document.getElementById('btn-login-google').addEventListener('click', async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    document.getElementById('auth-error').textContent = 'Googleログインに失敗しました';
+    console.error(e);
+  }
+});
+
+document.getElementById('btn-email-login').addEventListener('click', async () => {
+  const email = document.getElementById('email-input').value.trim();
+  const pass = document.getElementById('password-input').value;
+  const errEl = document.getElementById('auth-error');
+  if (!email || !pass) { errEl.textContent = 'メールとパスワードを入力してください'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    errEl.textContent = 'ログインに失敗しました。メールとパスワードを確認してください';
+    console.error(e);
+  }
+});
+
+document.getElementById('btn-email-signup').addEventListener('click', async () => {
+  const email = document.getElementById('email-input').value.trim();
+  const pass = document.getElementById('password-input').value;
+  const errEl = document.getElementById('auth-error');
+  if (!email || !pass) { errEl.textContent = 'メールとパスワードを入力してください'; return; }
+  if (pass.length < 6) { errEl.textContent = 'パスワードは6文字以上で入力してください'; return; }
+  try {
+    await createUserWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    errEl.textContent = e.code === 'auth/email-already-in-use' ? 'このメールアドレスは既に登録済みです' : '登録に失敗しました';
+    console.error(e);
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    hideLoginModal();
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    let displayName = '';
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        plan: 'free',
+        postCountThisMonth: 0,
+        categoryPreferences: [],
+        fcmToken: null,
+        stripeCustomerId: null,
+        challenge: { text: null, startedAt: null },
+        displayName: user.displayName || ''
+      });
+      displayName = user.displayName?.split(' ')[0] || user.email?.split('@')[0] || '';
+    } else {
+      const d = userSnap.data();
+      displayName = d.displayName || user.displayName?.split(' ')[0] || user.email?.split('@')[0] || '';
+    }
+    document.getElementById('user-name').textContent = displayName;
+    const avatarEl = document.getElementById('user-avatar');
+    avatarEl.textContent = (displayName || '?')[0].toUpperCase();
+    avatarEl.style.display = 'flex';
+    if (pendingTab) { const t = pendingTab; pendingTab = null; switchTab(t); }
+  } else {
+    currentUser = null;
+  }
+});
+
+// ── INIT ──
+updateCheersMeter();
+loadGenki();
+loadPosts();
+switchTab('feed');
+</script>
+</body>
+</html>
