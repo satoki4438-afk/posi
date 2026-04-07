@@ -319,8 +319,10 @@ export default function FeedPage() {
       id: Date.now() + i,
       e: emoji,
       left: 15 + Math.random() * 70,
-      dur: 0.6 + Math.random() * 0.4,
+      dur: 0.65 + Math.random() * 0.3,
       delay: Math.random() * 0.15,
+      tx: Math.round((Math.random() - 0.5) * 60),
+      rot: Math.round((Math.random() - 0.5) * 50),
     }))
     setFloatingEmojis(es => [...es, ...particles])
     const ids = new Set(particles.map(p => p.id))
@@ -796,7 +798,7 @@ export default function FeedPage() {
 
   return (
     <div style={S.root}>
-      <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} } @keyframes notifSlideDown { from { transform: translateY(-110%) } to { transform: translateY(0) } }`}</style>
+      <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} } @keyframes notifSlideDown { from { transform: translateY(-110%) } to { transform: translateY(0) } } @keyframes posiPop { 0%{transform:scale(1)} 40%{transform:scale(1.08)} 100%{transform:scale(1)} } .posi-pop{animation:posiPop 0.4s ease-out} @keyframes posiShake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} } .posi-shake{animation:posiShake 0.4s ease-out} @keyframes emojiFly { 0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:1} 70%{opacity:1} 100%{transform:translateY(-160px) translateX(var(--tx,0px)) rotate(var(--rot,0deg));opacity:0} } .emoji-fly{animation:emojiFly var(--dur,0.8s) var(--delay,0s) ease-out both}`}</style>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
         {currentUser && (
@@ -1046,7 +1048,7 @@ export default function FeedPage() {
             onTouchStart={e => { setWobble(false); dragStart(e.touches[0].clientX) }}
           >
             {floatingEmojis.map(fe => (
-              <div key={fe.id} className="emoji-fly" style={{ ...S.floatingEmoji, left: `${fe.left}%`, animationDuration: `${fe.dur}s`, animationDelay: `${fe.delay}s` }}>{fe.e}</div>
+              <div key={fe.id} className="emoji-fly" style={{ ...S.floatingEmoji, left: `${fe.left}%`, '--dur': `${fe.dur}s`, '--delay': `${fe.delay}s`, '--tx': `${fe.tx}px`, '--rot': `${fe.rot}deg` }}>{fe.e}</div>
             ))}
 
             <div style={S.centerWrap}>
