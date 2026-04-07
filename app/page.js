@@ -388,9 +388,13 @@ export default function FeedPage() {
     await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', notif.id), { isRead: true }).catch(console.error)
   }
 
+  const pickerOpenedRef = useRef(false)
+
   const posiDown = (e) => {
     e.stopPropagation()
+    pickerOpenedRef.current = false
     longRef.current = setTimeout(() => {
+      pickerOpenedRef.current = true
       setPickerOpen(true)
       longRef.current = null
     }, 400)
@@ -403,9 +407,10 @@ export default function FeedPage() {
       clearTimeout(longRef.current)
       longRef.current = null
       sendPosi()
-    } else if (!pickerOpen) {
+    } else if (!pickerOpenedRef.current) {
       sendPosi()
     }
+    pickerOpenedRef.current = false
   }
 
   const pickEmoji = (e) => {
