@@ -395,7 +395,7 @@ export default function FeedPage() {
         onMouseMove={e => isFeed && dragMove(e.clientX)}
         onMouseUp={e => isFeed && dragEnd()}
         onMouseLeave={e => isFeed && dragEnd()}
-        onTouchMove={e => { if (isFeed) { e.preventDefault(); dragMove(e.touches[0].clientX) } }}
+        onTouchMove={e => { if (isFeed && e.touches[0]) dragMove(e.touches[0].clientX) }}
         onTouchEnd={e => isFeed && dragEnd()}
       >
         {activeTab === 'profile' ? (
