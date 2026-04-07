@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { getApp } from 'firebase/app'
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, auth } from './lib/firebase'
 import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
@@ -52,6 +54,14 @@ const BG_PATTERNS = [
   { background: 'linear-gradient(135deg, #e1bee7, #ce93d8)', emoji: '🌙' },
 ]
 
+const POST_BG_PATTERNS = [
+  { id: 0, background: 'linear-gradient(135deg, #ffcc80, #ff8a65)', label: '🌅 オレンジ系' },
+  { id: 1, background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', label: '🌿 グリーン系' },
+  { id: 2, background: 'linear-gradient(135deg, #bbdefb, #90caf9)', label: '🌊 ブルー系' },
+  { id: 3, background: 'linear-gradient(135deg, #1a1a2e, #3a3a5c)', label: '⭐ ネイビー系' },
+  { id: 4, background: 'linear-gradient(135deg, #f8bbd0, #f48fb1)', label: '🌸 ピンク系' },
+]
+
 const getPattern = (id) => {
   const n = String(id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
   return BG_PATTERNS[n % BG_PATTERNS.length]
@@ -83,10 +93,18 @@ export default function FeedPage() {
   const [cheerEnergy, setCheerEnergy] = useState(15)
   const [shaking, setShaking] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [postText, setPostText] = useState('')
+  const [postPhotoFile, setPostPhotoFile] = useState(null)
+  const [postPhotoPreview, setPostPhotoPreview] = useState(null)
+  const [postPatternId, setPostPatternId] = useState(0)
+  const [postSubmitting, setPostSubmitting] = useState(false)
+  const [postDone, setPostDone] = useState(false)
+  const [confettiPieces, setConfettiPieces] = useState([])
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
   const fwStartRef = useRef(Date.now())
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     const t = setTimeout(() => setWobble(false), 1500)
@@ -290,6 +308,55 @@ export default function FeedPage() {
         text,
         createdAt: serverTimestamp(),
       }).catch(console.error)
+    }
+  }
+
+  const closePost = () => {
+    setActiveTab('home')
+    setPostText('')
+    setPostPhotoFile(null)
+    setPostPhotoPreview(null)
+    setPostPatternId(0)
+    setPostSubmitting(false)
+    setPostDone(false)
+    setConfettiPieces([])
+  }
+
+  const submitPost = async () => {
+    if (!postText.trim() || postSubmitting) return
+    setPostSubmitting(true)
+    try {
+      let photoUrl = null
+      if (postPhotoFile) {
+        const storage = getStorage(getApp())
+        const fileRef = storageRef(storage, `posts/${Date.now()}_${postPhotoFile.name}`)
+        await uploadBytes(fileRef, postPhotoFile)
+        photoUrl = await getDownloadURL(fileRef)
+      }
+      await addDoc(collection(db, 'posts'), {
+        text: postText.trim(),
+        imageUrl: photoUrl,
+        patternId: postPhotoFile ? null : postPatternId,
+        authorId: currentUser?.uid || null,
+        authorName: '名無し',
+        congratsCount: 0,
+        createdAt: serverTimestamp(),
+        reported: false,
+      })
+      const pieces = Array.from({ length: 60 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        color: ['#ff6b35', '#f5a623', '#4caf50', '#2196f3', '#e91e63', '#9c27b0'][Math.floor(Math.random() * 6)],
+        delay: Math.random() * 0.6,
+        dur: 1.2 + Math.random() * 1,
+        size: 6 + Math.random() * 8,
+      }))
+      setConfettiPieces(pieces)
+      setPostDone(true)
+      setTimeout(closePost, 2000)
+    } catch (e) {
+      console.error('Post error:', e)
+      setPostSubmitting(false)
     }
   }
 
@@ -764,6 +831,126 @@ export default function FeedPage() {
           <PostModalCard p={postModal} />
         </div>
       )}
+
+      {activeTab === 'post' && (
+        <div style={S.postScreenOverlay}>
+          <style>{`
+            @keyframes confettiFall {
+              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+            }
+            @keyframes postDoneIn {
+              0% { transform: scale(0.7); opacity: 0; }
+              60% { transform: scale(1.08); }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+
+          {postDone ? (
+            <div style={S.postDoneScreen}>
+              {confettiPieces.map(p => (
+                <div key={p.id} style={{
+                  position: 'fixed',
+                  left: `${p.left}%`,
+                  top: -10,
+                  width: p.size,
+                  height: p.size * 0.55,
+                  background: p.color,
+                  borderRadius: 2,
+                  animation: `confettiFall ${p.dur}s ${p.delay}s ease-in forwards`,
+                  pointerEvents: 'none',
+                  zIndex: 320,
+                }} />
+              ))}
+              <div style={S.postDoneText}>投稿できました！</div>
+            </div>
+          ) : (
+            <>
+              <div style={S.postScreenHeader}>
+                <button style={S.postScreenClose} onClick={closePost}>×</button>
+                <span style={S.postScreenTitle}>投稿する</span>
+                <div style={{ width: 40 }} />
+              </div>
+
+              <div style={S.postScreenBody}>
+                <div style={S.postTextWrap}>
+                  <textarea
+                    style={S.postTextarea}
+                    placeholder="今日達成したことを書こう！"
+                    maxLength={100}
+                    value={postText}
+                    onChange={e => setPostText(e.target.value)}
+                    rows={4}
+                  />
+                  <div style={S.postCharCount}>{postText.length} / 100</div>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setPostPhotoFile(file)
+                    setPostPhotoPreview(URL.createObjectURL(file))
+                  }}
+                />
+                <button style={S.photoAddBtn} onClick={() => fileInputRef.current?.click()}>
+                  📷 写真を追加
+                </button>
+
+                {!postPhotoFile && (
+                  <div style={S.patternSection}>
+                    <div style={S.patternLabel}>背景パターン</div>
+                    <div style={S.patternScroll}>
+                      {POST_BG_PATTERNS.map(p => (
+                        <button
+                          key={p.id}
+                          style={{ ...S.patternItem, background: p.background, ...(postPatternId === p.id ? S.patternItemSelected : {}) }}
+                          onClick={() => setPostPatternId(p.id)}
+                        >
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={S.previewLabel}>プレビュー</div>
+                <div style={S.previewCard}>
+                  {postPhotoPreview ? (
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ ...S.photoArea, maxHeight: 180 }}>
+                        <img src={postPhotoPreview} alt="" style={{ ...S.photo, maxHeight: 180 }} draggable={false} />
+                      </div>
+                      <button style={S.removePhotoBtn} onClick={() => { setPostPhotoFile(null); setPostPhotoPreview(null) }}>×</button>
+                    </div>
+                  ) : (
+                    <div style={{ ...S.photoAreaNoPhoto, background: POST_BG_PATTERNS[postPatternId].background, height: 160 }} />
+                  )}
+                  <div style={{ ...S.textArea, minHeight: 60 }}>
+                    <p style={{ ...S.postText, fontSize: postText.length <= 10 ? '1.6rem' : postText.length <= 30 ? '1.3rem' : '1rem' }}>
+                      {postText || <span style={{ color: '#ccc' }}>今日達成したことを書こう！</span>}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  style={{ ...S.submitPostBtn, ...(!postText.trim() || postSubmitting ? S.submitPostBtnDisabled : {}) }}
+                  onClick={submitPost}
+                  disabled={!postText.trim() || postSubmitting}
+                >
+                  {postSubmitting ? '投稿中...' : '投稿する'}
+                </button>
+
+                <div style={{ height: 20 }} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -874,6 +1061,29 @@ const S = {
   msgInput: { flex: 1, border: '1.5px solid var(--card-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', fontFamily: 'inherit' },
   msgSendBtn: { background: 'var(--orange)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 },
   toast: { position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#1a1a2e', color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', borderRadius: 99, zIndex: 200, whiteSpace: 'nowrap' },
+
+  // 投稿画面
+  postScreenOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
+  postScreenHeader: { padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid var(--card-border)', background: 'var(--bg)', flexShrink: 0 },
+  postScreenClose: { width: 40, height: 40, background: 'none', border: 'none', fontSize: 24, fontWeight: 700, color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  postScreenTitle: { fontSize: 16, fontWeight: 700, color: 'var(--text)' },
+  postScreenBody: { flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 },
+  postTextWrap: { position: 'relative' },
+  postTextarea: { width: '100%', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 15, lineHeight: 1.6, fontFamily: 'inherit', outline: 'none', resize: 'none', background: 'var(--card-bg)', color: 'var(--text)', boxSizing: 'border-box' },
+  postCharCount: { textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', marginTop: 4 },
+  photoAddBtn: { width: '100%', background: 'var(--card-bg)', border: '1.5px dashed var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer' },
+  patternSection: { display: 'flex', flexDirection: 'column', gap: 8 },
+  patternLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  patternScroll: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' },
+  patternItem: { minWidth: 90, height: 52, borderRadius: 10, border: '2.5px solid transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px' },
+  patternItemSelected: { border: '2.5px solid var(--orange)', boxShadow: '0 0 0 2px rgba(255,107,53,0.3)' },
+  previewLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  previewCard: { borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(255,107,53,0.1)' },
+  removePhotoBtn: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  submitPostBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
+  submitPostBtnDisabled: { background: '#ccc', boxShadow: 'none', cursor: 'not-allowed' },
+  postDoneScreen: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  postDoneText: { fontSize: 28, fontWeight: 900, color: 'var(--orange)', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative' },
 
   // モーダル
   fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
