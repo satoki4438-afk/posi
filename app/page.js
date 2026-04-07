@@ -107,11 +107,20 @@ export default function FeedPage() {
   const [postDone, setPostDone] = useState(false)
   const [confettiPieces, setConfettiPieces] = useState([])
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [onboardingDone, setOnboardingDone] = useState(true)
+  const [onboardIdx, setOnboardIdx] = useState(0)
+  const [selectedEffect, setSelectedEffect] = useState('🎆')
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
   const fwStartRef = useRef(Date.now())
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!localStorage.getItem('posi_onboarded')) {
+      setOnboardingDone(false)
+    }
+  }, [])
 
   useEffect(() => {
     const t = setTimeout(() => setWobble(false), 1500)
@@ -316,6 +325,11 @@ export default function FeedPage() {
         createdAt: serverTimestamp(),
       }).catch(console.error)
     }
+  }
+
+  const finishOnboarding = () => {
+    localStorage.setItem('posi_onboarded', '1')
+    setOnboardingDone(true)
   }
 
   const closePost = () => {
@@ -940,7 +954,23 @@ export default function FeedPage() {
                   zIndex: 320,
                 }} />
               ))}
-              <div style={S.postDoneText}>投稿できました！</div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, zIndex: 320, position: 'relative' }}>
+                <div style={S.postDoneText}>投稿できました！</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 240 }}>
+                  <a
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('Posiに投稿しました！みんなの応援待ってます🎆 #POSI https://posi-2o6x.vercel.app')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={S.shareBtn}
+                  >𝕏 でシェア</a>
+                  <a
+                    href={`https://line.me/R/msg/text/?${encodeURIComponent('Posiに投稿しました！応援してね🎆 https://posi-2o6x.vercel.app')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ ...S.shareBtn, background: '#06c755' }}
+                  >LINE でシェア</a>
+                </div>
+              </div>
             </div>
           ) : (
             <>
@@ -1026,6 +1056,86 @@ export default function FeedPage() {
                 <div style={{ height: 20 }} />
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {!onboardingDone && (
+        <div style={S.onboardOverlay}>
+          <style>{`
+            @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
+            @keyframes swipeHint { 0%{transform:translateX(0);opacity:0} 20%{opacity:1} 80%{opacity:1} 100%{transform:translateX(60px);opacity:0} }
+            @keyframes fireworkBurst {
+              0%{transform:scale(0);opacity:1} 60%{transform:scale(1.2);opacity:1} 100%{transform:scale(1);opacity:0.8}
+            }
+          `}</style>
+          <button style={S.onboardSkip} onClick={finishOnboarding}>スキップ</button>
+
+          {onboardIdx === 0 && (
+            <div style={S.onboardSlide}>
+              <div style={{ position: 'relative', width: 160, height: 160, marginBottom: 32 }}>
+                {[0,1,2,3,4,5].map(i => (
+                  <div key={i} style={{
+                    position: 'absolute', width: 16, height: 16, borderRadius: '50%',
+                    background: ['#ff6b35','#f5a623','#4caf50','#2196f3','#e91e63','#9c27b0'][i],
+                    top: `${50 + 44 * Math.sin(i * Math.PI / 3)}%`,
+                    left: `${50 + 44 * Math.cos(i * Math.PI / 3)}%`,
+                    animation: `floatUp ${1.2 + i * 0.2}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.18}s`,
+                  }} />
+                ))}
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>🌍</div>
+              </div>
+              <div style={S.onboardTitle}>あなたの達成を、世界に届けよう</div>
+              <div style={S.onboardSub}>おめでとうだけが存在する場所</div>
+            </div>
+          )}
+
+          {onboardIdx === 1 && (
+            <div style={S.onboardSlide}>
+              <div style={{ position: 'relative', width: 200, height: 140, marginBottom: 32 }}>
+                <div style={{ position: 'absolute', left: 20, top: 20, width: 120, height: 90, borderRadius: 16, background: 'linear-gradient(135deg,#ffcc80,#ff8a65)', boxShadow: '0 4px 20px rgba(255,107,53,0.3)' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, width: 120, height: 90, borderRadius: 16, background: '#fff', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#333', padding: 8, textAlign: 'center' }}>マラソン完走した！🏃</span>
+                </div>
+                <div style={{ position: 'absolute', right: 0, bottom: 0, animation: 'swipeHint 1.8s ease-in-out infinite' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#ff6b35', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#fff', boxShadow: '0 4px 12px rgba(255,107,53,0.4)' }}>👍</div>
+                </div>
+              </div>
+              <div style={S.onboardTitle}>スワイプして、応援しよう</div>
+              <div style={S.onboardSub}>誰かの達成にPosiを送ろう。{'\n'}応援するほど、あなたも輝く。</div>
+            </div>
+          )}
+
+          {onboardIdx === 2 && (
+            <div style={S.onboardSlide}>
+              <div style={{ width: 140, height: 140, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 80, animation: 'fireworkBurst 1.5s ease-out infinite' }}>{selectedEffect}</div>
+              </div>
+              <div style={S.onboardTitle}>みんなのPosiを集めて{'\n'}お祝いしよう</div>
+              <div style={S.onboardSub}>1000Posiが集まったらお祝い演出！{'\n'}演出を選んでください</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {['🎆','🏮','🦋','🎈','☄️'].map(e => (
+                  <button
+                    key={e}
+                    style={{ fontSize: 32, background: selectedEffect === e ? 'var(--orange-tint)' : 'var(--card-bg)', border: selectedEffect === e ? '2px solid var(--orange)' : '2px solid var(--card-border)', borderRadius: 12, padding: '8px 12px', cursor: 'pointer' }}
+                    onClick={() => setSelectedEffect(e)}
+                  >{e}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={S.onboardDots}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{ ...S.onboardDot, ...(onboardIdx === i ? S.onboardDotActive : {}) }} onClick={() => setOnboardIdx(i)} />
+            ))}
+          </div>
+
+          {onboardIdx < 2 ? (
+            <button style={S.onboardNext} onClick={() => setOnboardIdx(i => i + 1)}>次へ</button>
+          ) : (
+            <button style={S.onboardNext} onClick={finishOnboarding}>はじめる！</button>
           )}
         </div>
       )}
@@ -1166,7 +1276,18 @@ const S = {
   submitPostBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
   submitPostBtnDisabled: { background: '#ccc', boxShadow: 'none', cursor: 'not-allowed' },
   postDoneScreen: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
-  postDoneText: { fontSize: 28, fontWeight: 900, color: 'var(--orange)', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative' },
+  postDoneText: { fontSize: 28, fontWeight: 900, color: 'var(--orange)', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative', textAlign: 'center', marginBottom: 4 },
+  shareBtn: { display: 'block', width: '100%', background: '#1a1a2e', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
+
+  onboardOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', maxWidth: 480, margin: '0 auto', padding: '0 32px 40px' },
+  onboardSkip: { position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer' },
+  onboardSlide: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: 1, justifyContent: 'center' },
+  onboardTitle: { fontSize: 22, fontWeight: 900, color: 'var(--text)', lineHeight: 1.4, marginBottom: 12, whiteSpace: 'pre-line' },
+  onboardSub: { fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, whiteSpace: 'pre-line' },
+  onboardDots: { display: 'flex', gap: 8, marginBottom: 24 },
+  onboardDot: { width: 8, height: 8, borderRadius: '50%', background: 'var(--card-border)', cursor: 'pointer' },
+  onboardDotActive: { background: 'var(--orange)', width: 20, borderRadius: 99 },
+  onboardNext: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
 
   // モーダル
   fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
