@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { getApp } from 'firebase/app'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, auth, getMessagingInstance } from './lib/firebase'
-import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { setDoc, getDoc } from 'firebase/firestore'
 
@@ -114,6 +114,8 @@ export default function FeedPage() {
   const [goalMenuId, setGoalMenuId] = useState(null)
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null)
   const goalLongRef = useRef(null)
+  const [notifications, setNotifications] = useState([])
+  const [notifDrawerOpen, setNotifDrawerOpen] = useState(false)
   const [postText, setPostText] = useState('')
   const [postPhotoFile, setPostPhotoFile] = useState(null)
   const [postPhotoPreview, setPostPhotoPreview] = useState(null)
@@ -345,38 +347,43 @@ export default function FeedPage() {
     }
   }
 
+  const saveNotification = async (uid, title, body) => {
+    await addDoc(collection(db, 'users', uid, 'notifications'), {
+      title, body, isRead: false, createdAt: serverTimestamp(),
+    }).catch(console.error)
+  }
+
   const sendPosiNotification = async (targetPost, newCount) => {
     if (!targetPost.authorId || targetPost.authorId === currentUser?.uid) return
     try {
       const authorSnap = await getDoc(doc(db, 'users', targetPost.authorId))
       if (!authorSnap.exists()) return
       const { fcmToken } = authorSnap.data()
-      if (!fcmToken) return
       const senderName = userProfile?.nickname || currentUser?.displayName || 'だれか'
       const isKirakira = newCount >= targetPost.target && targetPost.posiCount < targetPost.target
 
       if (isKirakira) {
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: fcmToken, title: '🎉 お祝いが始まりました！', body: 'みんなの応援ありがとう' }),
-        })
-        const myPosiSnap = await getDoc(doc(db, 'users', currentUser.uid))
-        if (myPosiSnap.exists() && myPosiSnap.data().fcmToken) {
-          await fetch('/api/notify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: myPosiSnap.data().fcmToken, title: '✨ お祝いに参加しました！', body: `あなたが応援した${targetPost.author}さんのお祝いが始まりました！` }),
-          })
-        }
+        const ownerTitle = '🎉 お祝いが始まりました！'
+        const ownerBody = 'みんなの応援ありがとう'
+        await saveNotification(targetPost.authorId, ownerTitle, ownerBody)
+        if (fcmToken) await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: fcmToken, title: ownerTitle, body: ownerBody }) })
+
+        const myTitle = '✨ お祝いに参加しました！'
+        const myBody = `あなたが応援した${targetPost.author}さんのお祝いが始まりました！`
+        await saveNotification(currentUser.uid, myTitle, myBody)
+        const mySnap = await getDoc(doc(db, 'users', currentUser.uid))
+        if (mySnap.exists() && mySnap.data().fcmToken) await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: mySnap.data().fcmToken, title: myTitle, body: myBody }) })
       } else {
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: fcmToken, title: `👍 ${senderName}さんがPosiしてくれました！`, body: targetPost.text }),
-        })
+        const title = `👍 ${senderName}さんがPosiしてくれました！`
+        await saveNotification(targetPost.authorId, title, targetPost.text)
+        if (fcmToken) await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: fcmToken, title, body: targetPost.text }) })
       }
     } catch (e) { console.error('notify error:', e) }
+  }
+
+  const markNotifRead = async (notif) => {
+    if (notif.isRead || !currentUser) return
+    await updateDoc(doc(db, 'users', currentUser.uid, 'notifications', notif.id), { isRead: true }).catch(console.error)
   }
 
   const posiDown = (e) => {
@@ -559,6 +566,20 @@ export default function FeedPage() {
       } catch (e) { console.error(e) }
     }
     loadGoals()
+  }, [currentUser])
+
+  useEffect(() => {
+    if (!currentUser) { setNotifications([]); return }
+    const q = query(collection(db, 'users', currentUser.uid, 'notifications'), orderBy('createdAt', 'desc'), limit(20))
+    const unsub = onSnapshot(q, async (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      setNotifications(items)
+      if (snap.docs.length > 20) {
+        const oldest = snap.docs.slice(20)
+        for (const d of oldest) await deleteDoc(doc(db, 'users', currentUser.uid, 'notifications', d.id)).catch(() => {})
+      }
+    }, (e) => console.error(e))
+    return () => unsub()
   }, [currentUser])
 
   const openGoalAdd = () => { setGoalModal('add'); setGoalText(''); setGoalDeadline('') }
@@ -778,6 +799,17 @@ export default function FeedPage() {
       <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} }`}</style>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
+        {currentUser && (
+          <button style={S.bellBtn} onClick={() => setNotifDrawerOpen(v => !v)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {notifications.filter(n => !n.isRead).length > 0 && (
+              <span style={S.bellBadge}>{Math.min(notifications.filter(n => !n.isRead).length, 99)}</span>
+            )}
+          </button>
+        )}
       </header>
 
       {isFeed && hasSoonBanner && (
@@ -1716,14 +1748,49 @@ export default function FeedPage() {
           )}
         </div>
       )}
+
+      {notifDrawerOpen && (
+        <div style={S.notifOverlay} onClick={() => setNotifDrawerOpen(false)} />
+      )}
+      <div style={{ ...S.notifDrawer, transform: notifDrawerOpen ? 'translateY(0)' : 'translateY(-110%)' }}>
+        <div style={S.notifHeader}>
+          <span style={S.notifTitle}>通知</span>
+          <button style={S.notifClose} onClick={() => setNotifDrawerOpen(false)}>✕</button>
+        </div>
+        <div style={S.notifList}>
+          {notifications.length === 0 ? (
+            <div style={S.notifEmpty}>まだ通知がありません</div>
+          ) : notifications.map(n => (
+            <div key={n.id} style={{ ...S.notifItem, ...(n.isRead ? S.notifItemRead : {}) }} onClick={() => markNotifRead(n)}>
+              <div style={S.notifItemTitle}>{n.title}</div>
+              {n.body ? <div style={S.notifItemBody}>{n.body}</div> : null}
+              {!n.isRead && <div style={S.notifUnreadDot} />}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
 const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
-  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
+  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'var(--orange)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
+  bellBtn: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  bellBadge: { position: 'absolute', top: 0, right: 0, background: '#e53935', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', lineHeight: 1 },
+  notifOverlay: { position: 'fixed', inset: 0, zIndex: 49 },
+  notifDrawer: { position: 'fixed', top: 60, right: 0, left: 0, maxWidth: 480, margin: '0 auto', background: 'var(--card-bg)', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', zIndex: 50, transition: 'transform 0.28s cubic-bezier(0.34,1.0,0.64,1)', maxHeight: '70vh', display: 'flex', flexDirection: 'column' },
+  notifHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '0.5px solid var(--card-border)' },
+  notifTitle: { fontSize: 16, fontWeight: 800, color: 'var(--text)' },
+  notifClose: { background: 'none', border: 'none', fontSize: 16, color: 'var(--text-sub)', cursor: 'pointer', padding: 4 },
+  notifList: { overflowY: 'auto', flex: 1 },
+  notifEmpty: { padding: '32px 18px', textAlign: 'center', color: 'var(--text-sub)', fontSize: 14 },
+  notifItem: { position: 'relative', padding: '13px 18px', borderBottom: '0.5px solid var(--card-border)', cursor: 'pointer' },
+  notifItemRead: { opacity: 0.5 },
+  notifItemTitle: { fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 },
+  notifItemBody: { fontSize: 12, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 },
+  notifUnreadDot: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: 'var(--orange)' },
 
   soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: '#f5601e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px' },
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
