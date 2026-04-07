@@ -395,16 +395,52 @@ export default function FeedPage() {
   const isFeed = activeTab === 'home'
   const isScroll = activeTab === 'profile' || activeTab === 'cheers'
 
-  const NAV_LABELS = { home: 'ホーム', goal: '目標', cheers: 'Cheers', profile: 'プロフ' }
-  const navTab = (tab, icon) => (
-    <button
-      style={{ ...S.navTab, ...(activeTab === tab ? S.navTabActive : {}) }}
-      onClick={() => { setActiveTab(tab); setCheersSubView(null) }}
-    >
-      <span>{icon}</span>
-      <span style={S.navLabel}>{NAV_LABELS[tab]}</span>
-    </button>
+  const soonPosts = isFeed ? posts.filter(p => (p.target - p.posiCount) <= 100 && (p.target - p.posiCount) > 0) : []
+  const hasSoonBanner = soonPosts.length > 0
+  const BANNER_H = 36
+
+  const jumpToSoon = () => {
+    const p = soonPosts[Math.floor(Math.random() * soonPosts.length)]
+    const newIdx = posts.indexOf(p)
+    if (newIdx !== -1) setIdx(newIdx)
+  }
+
+  const NAV_LABELS = { home: 'ホーム', goal: 'フレンド', cheers: 'Cheers', profile: 'プロフ' }
+
+  const IconHome = ({ color }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+    </svg>
   )
+  const IconCheers = ({ color }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M9.5 3L8 8H5L3 18h7v3h4v-3h7L19 8h-3L14.5 3h-5zm-.74 2h5.48l1.25 3.5H7.51L8.76 5zM5.22 16l1.45-6h10.66l1.45 6H5.22z"/>
+    </svg>
+  )
+  const IconFriends = ({ color }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+    </svg>
+  )
+  const IconProfile = ({ color }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={color}>
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+    </svg>
+  )
+
+  const navTab = (tab, Icon) => {
+    const active = activeTab === tab
+    const color = active ? 'var(--orange)' : '#aaa'
+    return (
+      <button
+        style={{ ...S.navTab, ...(active ? S.navTabActive : {}) }}
+        onClick={() => { setActiveTab(tab); setCheersSubView(null) }}
+      >
+        <Icon color={color} />
+        <span style={{ ...S.navLabel, color }}>{NAV_LABELS[tab]}</span>
+      </button>
+    )
+  }
 
   const PostModalCard = ({ p }) => (
     <div style={S.postModalCard} onClick={e => e.stopPropagation()}>
@@ -450,12 +486,19 @@ export default function FeedPage() {
 
   return (
     <div style={S.root}>
+      <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} }`}</style>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
       </header>
 
+      {isFeed && hasSoonBanner && (
+        <div style={S.soonBanner} onClick={jumpToSoon}>
+          <span style={{ animation: 'soonBlink 1.4s ease-in-out infinite' }}>もうすぐ！→</span>
+        </div>
+      )}
+
       {isFeed && post && (
-        <div style={S.authorFixed}>
+        <div style={{ ...S.authorFixed, top: 60 + (hasSoonBanner ? BANNER_H : 0) }}>
           <div style={S.avatar}>{post.initials}</div>
           <div>
             <div style={S.authorName}>{post.author}</div>
@@ -663,7 +706,7 @@ export default function FeedPage() {
         ) : (
           <div
             className={isWobbling ? 'card-wobble' : ''}
-            style={{ ...S.screen, ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
+            style={{ ...S.screen, top: 130 + (hasSoonBanner ? BANNER_H : 0), ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
             onMouseDown={e => { setWobble(false); dragStart(e.clientX) }}
             onTouchStart={e => { setWobble(false); dragStart(e.touches[0].clientX) }}
           >
@@ -741,13 +784,13 @@ export default function FeedPage() {
       <div style={S.cheersMeter}>⚡ {cheerEnergy} / 15</div>
 
       <nav style={{ ...S.nav, borderTop: 'none' }}>
-        {navTab('home', '🏠')}
-        {navTab('goal', '🎯')}
+        {navTab('home', IconHome)}
+        {navTab('cheers', IconCheers)}
         <button style={S.postTab} onClick={() => setActiveTab('post')}>
           <div style={S.postInner}>＋</div>
         </button>
-        {navTab('cheers', '🎆')}
-        {navTab('profile', '👤')}
+        {navTab('goal', IconFriends)}
+        {navTab('profile', IconProfile)}
       </nav>
 
       {lightbox && (
@@ -960,6 +1003,7 @@ const S = {
   header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
 
+  soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: 'linear-gradient(90deg, #ff8c42, #ff6b1a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px' },
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
