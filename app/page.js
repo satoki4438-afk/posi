@@ -390,12 +390,10 @@ export default function FeedPage() {
 
   const posiDown = (e) => {
     e.stopPropagation()
-    if (USER_TIER === 'premium') {
-      longRef.current = setTimeout(() => {
-        setPickerOpen(true)
-        longRef.current = null
-      }, 400)
-    }
+    longRef.current = setTimeout(() => {
+      setPickerOpen(true)
+      longRef.current = null
+    }, 400)
   }
 
   const posiUp = (e) => {
@@ -677,7 +675,7 @@ export default function FeedPage() {
   const progress = post ? (post.posiCount / post.target) * 100 : 0
   const remaining = post ? post.target - post.posiCount : 0
   const hasSent = post ? !!sent[post.id] : false
-  const emojis = USER_TIER === 'premium' ? EMOJIS : USER_TIER === 'free' ? EMOJIS_FREE : ['👍']
+  const emojis = EMOJIS
 
   const isWobbling = wobble && !drag.on && !leaving
   let cardTransform = 'translateX(0) rotate(0deg)'
