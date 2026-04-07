@@ -67,6 +67,12 @@ const getPattern = (id) => {
   return BG_PATTERNS[n % BG_PATTERNS.length]
 }
 
+const hashColor = (name) => {
+  const colors = ['#ff6b35', '#4caf50', '#2196f3', '#9c27b0', '#f5a623', '#00bcd4', '#e91e63', '#ff9800']
+  const n = String(name).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  return colors[n % colors.length]
+}
+
 export default function FeedPage() {
   const [posts, setPosts] = useState(MOCK_POSTS)
   const [idx, setIdx] = useState(0)
@@ -100,6 +106,7 @@ export default function FeedPage() {
   const [postSubmitting, setPostSubmitting] = useState(false)
   const [postDone, setPostDone] = useState(false)
   const [confettiPieces, setConfettiPieces] = useState([])
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -618,6 +625,7 @@ export default function FeedPage() {
                 <span style={S.todayBadge}>本日限定</span>
               </div>
               <div style={S.hscrollWrap}>
+                {MOCK_FIREWORKS.length === 0 && <div style={S.emptyState}>まだ花火はありません</div>}
                 {MOCK_FIREWORKS.map(fw => {
                   const remText = fw.expired ? null : getFwRemaining(fw.hoursLeft)
                   const isExpired = fw.expired || remText === null
@@ -640,28 +648,7 @@ export default function FeedPage() {
                 })}
               </div>
 
-              {/* 2. フレンド */}
-              <div style={{ ...S.sectionHeader, marginTop: 20 }}>
-                <span style={S.sectionTitle}>👥 フレンド</span>
-              </div>
-              {MOCK_FRIENDS.length === 0 ? (
-                <div style={S.emptyState}>まだフレンドがいません　POSIし合うと繋がれます</div>
-              ) : (
-                <div style={S.hscrollWrap}>
-                  {MOCK_FRIENDS.map(fr => (
-                    <div key={fr.id} style={S.friendItem} onClick={() => setActiveTab('profile')}>
-                      <div style={S.friendAvatar}>{fr.initials}</div>
-                      <div style={S.friendName}>{fr.name}</div>
-                    </div>
-                  ))}
-                  <div style={S.friendItem}>
-                    <div style={S.friendInviteBtn}>＋</div>
-                    <div style={S.friendName}>招待</div>
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Cheers履歴 */}
+              {/* 2. Cheers履歴 */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={S.sectionTitle}>👍 Cheersした</span>
@@ -679,24 +666,51 @@ export default function FeedPage() {
                 </>
               )}
 
-              {/* 4. 達成済み */}
+              {/* 3. 達成済み */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
-                <span style={S.sectionTitle}>🏆 達成済み</span>
+                <div>
+                  <span style={S.sectionTitle}>🏆 達成済み</span>
+                  <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>あなたが応援した人の達成</div>
+                </div>
               </div>
-              {MOCK_ACHIEVED.length === 0 ? (
-                <div style={S.emptyState}>まだ達成者がいません　どんどんPosiしよう！</div>
-              ) : (
-                <>
-                  {MOCK_ACHIEVED.slice(0, 30).slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
-                  {MOCK_ACHIEVED.length > 3 && (
-                    <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
-                  )}
-                </>
-              )}
+              {(() => {
+                const sentAuthors = new Set(posts.filter(p => sent[p.id]).map(p => p.author))
+                const achieved = MOCK_ACHIEVED.filter(p => sentAuthors.has(p.author)).slice(-30)
+                return achieved.length === 0 ? (
+                  <div style={S.emptyState}>Posiした投稿の作者が達成するとここに表示されます</div>
+                ) : (
+                  <>
+                    {achieved.slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
+                    {achieved.length > 3 && (
+                      <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
+                    )}
+                  </>
+                )
+              })()}
 
               <div style={{ height: 20 }} />
             </div>
           )
+
+        ) : activeTab === 'goal' ? (
+          <div style={S.profileScroll}>
+            <div style={{ ...S.sectionHeader, marginTop: 0 }}>
+              <span style={S.sectionTitle}>👥 フレンド</span>
+              <button style={S.inviteBtn} onClick={() => setInviteModalOpen(true)}>＋ 招待</button>
+            </div>
+            {MOCK_FRIENDS.length === 0 ? (
+              <div style={S.emptyState}>まだフレンドがいません　POSIし合うと繋がれます</div>
+            ) : (
+              MOCK_FRIENDS.map(fr => (
+                <div key={fr.id} style={S.friendRow} onClick={() => setActiveTab('profile')}>
+                  <div style={{ ...S.friendRowAvatar, background: hashColor(fr.name) }}>{fr.initials}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{fr.name}</div>
+                  <span style={{ marginLeft: 'auto', fontSize: 18, color: 'var(--text-sub)' }}>›</span>
+                </div>
+              ))
+            )}
+            <div style={{ height: 20 }} />
+          </div>
 
         ) : !post ? (
           <div style={S.empty}>
@@ -868,6 +882,27 @@ export default function FeedPage() {
         <div style={S.toast}>{toast}</div>
       )}
 
+      {inviteModalOpen && (
+        <div style={S.msgOverlay} onClick={() => setInviteModalOpen(false)}>
+          <div style={S.msgSheet} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>友達を招待する</div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 20 }}>一緒にPosiしよう！</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a
+                href={`https://line.me/R/msg/text/?Posi%E3%82%A2%E3%83%97%E3%83%AA%E3%81%A7%E4%B8%80%E7%B7%92%E3%81%AB%E3%81%8A%E3%82%81%E3%81%A7%E3%81%A8%E3%81%86%E8%A8%80%E3%81%84%E5%90%88%E3%81%8A%E3%81%86%EF%BC%81%20https%3A%2F%2Fposi-2o6x.vercel.app`}
+                style={S.inviteOptionBtn}
+                onClick={() => setInviteModalOpen(false)}
+              >LINE で送る</a>
+              <a
+                href={`mailto:?subject=Posi%20-%20%E3%81%8A%E3%82%81%E3%81%A7%E3%81%A8%E3%81%86%E3%82%92%E8%A8%80%E3%81%84%E5%90%88%E3%81%8A%E3%81%86&body=Posi%E3%82%A2%E3%83%97%E3%83%AA%E3%81%A7%E4%B8%80%E7%B7%92%E3%81%AB%E3%81%8A%E3%82%81%E3%81%A7%E3%81%A8%E3%81%86%E8%A8%80%E3%81%84%E5%90%88%E3%81%8A%E3%81%86%EF%BC%81%20https%3A%2F%2Fposi-2o6x.vercel.app`}
+                style={S.inviteOptionBtn}
+                onClick={() => setInviteModalOpen(false)}
+              >メールで送る</a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {postModal && (
         <div style={S.postOverlay} onClick={() => setPostModal(null)}>
           <button style={S.lightboxClose} onClick={e => { e.stopPropagation(); setPostModal(null) }}>×</button>
@@ -1003,7 +1038,7 @@ const S = {
   header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
 
-  soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: 'linear-gradient(90deg, #ff8c42, #ff6b1a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px' },
+  soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: '#f5601e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px' },
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
@@ -1082,6 +1117,10 @@ const S = {
   fireworkCard: { minWidth: 130, background: '#1a1a2e', borderRadius: 20, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 },
   fireworkCardExpired: { opacity: 0.4 },
   fwAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 800, marginTop: 8 },
+  inviteBtn: { fontSize: 13, fontWeight: 700, color: 'var(--orange)', background: 'var(--orange-tint)', border: '1px solid var(--orange-border)', borderRadius: 99, padding: '5px 12px', cursor: 'pointer' },
+  friendRow: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+  friendRowAvatar: { width: 42, height: 42, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 800, flexShrink: 0 },
+  inviteOptionBtn: { display: 'block', width: '100%', background: 'var(--card-bg)', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, color: 'var(--text)', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
   friendItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 },
   friendAvatar: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--orange)', fontWeight: 800 },
   friendInviteBtn: { width: 48, height: 48, borderRadius: '50%', background: 'var(--card-bg)', border: '2px dashed var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--text-sub)', cursor: 'pointer' },
