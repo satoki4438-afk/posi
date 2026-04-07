@@ -199,11 +199,15 @@ export default function FeedPage() {
   }
 
   const dragEnd = () => {
-    setDrag(d => {
-      if (!d.on) return d
-      if (Math.abs(d.dx) > 80) swipe(d.dx > 0 ? 'right' : 'left')
-      return { on: false, x0: 0, dx: 0 }
-    })
+    try {
+      setDrag(d => {
+        if (!d.on) return d
+        if (Math.abs(d.dx) > 80) swipe(d.dx > 0 ? 'right' : 'left')
+        return { on: false, x0: 0, dx: 0 }
+      })
+    } catch (e) {
+      console.error('[dragEnd error]', e)
+    }
   }
 
   const sendPosi = () => {
@@ -395,8 +399,8 @@ export default function FeedPage() {
         onMouseMove={e => isFeed && dragMove(e.clientX)}
         onMouseUp={e => isFeed && dragEnd()}
         onMouseLeave={e => isFeed && dragEnd()}
-        onTouchMove={e => { if (isFeed && e.touches[0]) dragMove(e.touches[0].clientX) }}
-        onTouchEnd={e => isFeed && dragEnd()}
+        onTouchMove={e => { try { if (isFeed && e.touches[0]) dragMove(e.touches[0].clientX) } catch (e) { console.error('[onTouchMove error]', e) } }}
+        onTouchEnd={e => { try { isFeed && dragEnd() } catch (e) { console.error('[onTouchEnd error]', e) } }}
       >
         {activeTab === 'profile' ? (
           <div style={S.profileScroll}>
