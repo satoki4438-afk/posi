@@ -110,11 +110,21 @@ export default function FeedPage() {
   const [onboardingDone, setOnboardingDone] = useState(true)
   const [onboardIdx, setOnboardIdx] = useState(0)
   const [selectedEffect, setSelectedEffect] = useState('🎆')
+  const [achieveModal, setAchieveModal] = useState(null)
+  const [achieveStep, setAchieveStep] = useState(1)
+  const [achieveEffect, setAchieveEffect] = useState('🎆')
+  const [achieveMsg, setAchieveMsg] = useState('')
+  const [achieveMsgPos, setAchieveMsgPos] = useState('mid')
+  const [achieveMsgColor, setAchieveMsgColor] = useState('white')
+  const [achieveMsgSize, setAchieveMsgSize] = useState('mid')
+  const [achieveEffectItems, setAchieveEffectItems] = useState([])
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
   const fwStartRef = useRef(Date.now())
   const fileInputRef = useRef(null)
+  const fireworkCanvasRef = useRef(null)
+  const fireworkAnimRef = useRef(null)
 
   useEffect(() => {
     if (!localStorage.getItem('posi_onboarded')) {
@@ -273,9 +283,21 @@ export default function FeedPage() {
     const ids = new Set(particles.map(p => p.id))
     setTimeout(() => setFloatingEmojis(es => es.filter(fe => !ids.has(fe.id))), 1200)
     setSent(s => ({ ...s, [post.id]: true }))
+    const newCount = Math.min(post.posiCount + 1, post.target)
     setPosts(ps => ps.map(p =>
-      p.id === post.id ? { ...p, posiCount: Math.min(p.posiCount + 1, p.target) } : p
+      p.id === post.id ? { ...p, posiCount: newCount } : p
     ))
+    if (newCount >= post.target && post.posiCount < post.target) {
+      setTimeout(() => {
+        setAchieveModal({ post: { ...post, posiCount: newCount } })
+        setAchieveStep(1)
+        setAchieveEffect('🎆')
+        setAchieveMsg('')
+        setAchieveMsgPos('mid')
+        setAchieveMsgColor('white')
+        setAchieveMsgSize('mid')
+      }, 400)
+    }
     if (currentUser) {
       updateDoc(doc(db, 'posts', post.id), { congratsCount: increment(1) }).catch(console.error)
     }
@@ -326,6 +348,66 @@ export default function FeedPage() {
       }).catch(console.error)
     }
   }
+
+  useEffect(() => {
+    if (!achieveModal || achieveStep !== 3 || achieveEffect !== '🎆') return
+    const canvas = fireworkCanvasRef.current
+    if (!canvas) return
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    const ctx = canvas.getContext('2d')
+    const particles = []
+    const rockets = []
+    const COLORS = ['#ff6b35','#f5a623','#fff','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b']
+    const explode = (x, y) => {
+      for (let i = 0; i < 80; i++) {
+        const a = (Math.PI * 2 * i) / 80
+        const s = 2 + Math.random() * 5
+        particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, color: COLORS[i%COLORS.length], life: 1, decay: 0.012 + Math.random()*0.015, size: 2 + Math.random()*2 })
+      }
+    }
+    const launch = () => rockets.push({ x: canvas.width*(0.2+Math.random()*0.6), y: canvas.height, vy: -(9+Math.random()*5), targetY: canvas.height*(0.1+Math.random()*0.35), trail: [] })
+    let frame = 0
+    const tick = () => {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'
+      ctx.fillRect(0,0,canvas.width,canvas.height)
+      if (++frame % 45 === 0) launch()
+      rockets.forEach((r,ri) => {
+        r.trail.push({x:r.x,y:r.y})
+        if (r.trail.length>12) r.trail.shift()
+        r.y += r.vy
+        r.trail.forEach((t,ti) => { ctx.beginPath(); ctx.arc(t.x,t.y,2,0,Math.PI*2); ctx.fillStyle=`rgba(255,200,100,${ti/r.trail.length})`; ctx.fill() })
+        if (r.y<=r.targetY) { explode(r.x,r.y); rockets.splice(ri,1) }
+      })
+      for (let i=particles.length-1;i>=0;i--) {
+        const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=p.decay
+        if (p.life<=0){particles.splice(i,1);continue}
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2)
+        ctx.fillStyle=p.color; ctx.globalAlpha=p.life; ctx.fill(); ctx.globalAlpha=1
+      }
+      fireworkAnimRef.current = requestAnimationFrame(tick)
+    }
+    launch(); tick()
+    return () => cancelAnimationFrame(fireworkAnimRef.current)
+  }, [achieveModal, achieveStep, achieveEffect])
+
+  useEffect(() => {
+    if (!achieveModal || achieveStep !== 3) return
+    const effect = achieveEffect
+    if (effect === '🎆') return
+    const count = effect === '🎈' ? 12 : effect === '🏮' ? 8 : effect === '☄️' ? 16 : 10
+    const items = Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: 5 + Math.random() * 90,
+      dur: 4 + Math.random() * 5,
+      delay: Math.random() * 3,
+      size: 0.7 + Math.random() * 0.8,
+      sway: (Math.random() - 0.5) * 60,
+      color: ['#ff6b35','#f5a623','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b','#00bcd4'][i % 8],
+    }))
+    setAchieveEffectItems(items)
+    return () => setAchieveEffectItems([])
+  }, [achieveModal, achieveStep, achieveEffect])
 
   const finishOnboarding = () => {
     localStorage.setItem('posi_onboarded', '1')
@@ -1057,6 +1139,168 @@ export default function FeedPage() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {achieveModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, maxWidth: 480, margin: '0 auto' }}>
+          <style>{`
+            @keyframes lanternRise { 0%{transform:translateY(0) translateX(0) rotate(-3deg);opacity:0} 10%{opacity:1} 50%{transform:translateY(-50vh) translateX(var(--sw)) rotate(3deg)} 100%{transform:translateY(-110vh) translateX(0) rotate(-3deg);opacity:0} }
+            @keyframes meteorFall { 0%{transform:translate(0,0);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translate(-120vw,120vh);opacity:0} }
+            @keyframes balloonRise { 0%{transform:translateY(0) translateX(0);opacity:0} 10%{opacity:1} 50%{transform:translateY(-50vh) translateX(var(--sw))} 100%{transform:translateY(-110vh) translateX(0);opacity:0} }
+            @keyframes butterflyFloat {
+              0%{transform:translate(0,0) rotate(0deg)} 25%{transform:translate(60px,-40px) rotate(15deg)} 50%{transform:translate(120px,20px) rotate(-10deg)} 75%{transform:translate(60px,60px) rotate(20deg)} 100%{transform:translate(0,0) rotate(0deg)}
+            }
+            @keyframes wingFlap { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.3)} }
+            @keyframes scrollAchieve { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+          `}</style>
+
+          {/* STEP 1: 演出選択 */}
+          {achieveStep === 1 && (
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', gap: 20 }}>
+              <div style={{ fontSize: 48, marginBottom: 4 }}>🎆</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', textAlign: 'center' }}>1,000 Posi達成！</div>
+              <div style={{ fontSize: 15, color: '#ddd', textAlign: 'center', marginBottom: 8 }}>どの演出で打ち上げる？</div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {[['🎆','花火'],['🏮','ランタン'],['☄️','流星群'],['🦋','光の蝶'],['🎈','風船']].map(([e, label]) => (
+                  <button key={e} onClick={() => setAchieveEffect(e)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: achieveEffect === e ? 'rgba(245,96,30,0.25)' : 'rgba(255,255,255,0.08)', border: achieveEffect === e ? '2px solid #f5601e' : '2px solid transparent', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: 32 }}>{e}</span>
+                    <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>{label}</span>
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setAchieveStep(2)}
+                style={{ width: '100%', background: '#f5601e', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', marginTop: 8 }}>
+                次へ →
+              </button>
+            </div>
+          )}
+
+          {/* STEP 2: メッセージ入力 */}
+          {achieveStep === 2 && (
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', padding: '48px 24px 32px', gap: 20, overflowY: 'auto' }}>
+              <button onClick={() => setAchieveStep(1)} style={{ position: 'absolute', top: 16, left: 16, background: 'none', border: 'none', color: '#aaa', fontSize: 14, cursor: 'pointer' }}>← 戻る</button>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', textAlign: 'center' }}>みんなへひとこと</div>
+              <textarea
+                style={{ width: '100%', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '12px', fontSize: 15, lineHeight: 1.6, fontFamily: 'inherit', outline: 'none', resize: 'none', background: 'rgba(255,255,255,0.08)', color: '#fff', boxSizing: 'border-box' }}
+                placeholder="ありがとう！みんなのおかげです✨"
+                maxLength={30}
+                rows={3}
+                value={achieveMsg}
+                onChange={e => setAchieveMsg(e.target.value)}
+              />
+              <div style={{ textAlign: 'right', fontSize: 11, color: '#888', marginTop: -12 }}>{achieveMsg.length} / 30</div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  ['表示位置', [['top','上'],['mid','中'],['bot','下']], achieveMsgPos, setAchieveMsgPos],
+                  ['文字色', [['white','白'],['orange','オレンジ'],['gold','金']], achieveMsgColor, setAchieveMsgColor],
+                  ['文字サイズ', [['large','大'],['mid','中'],['small','小']], achieveMsgSize, setAchieveMsgSize],
+                ].map(([label, opts, val, setter]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: '#ccc', fontWeight: 600, width: 72, flexShrink: 0 }}>{label}</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {opts.map(([v, l]) => (
+                        <button key={v} onClick={() => setter(v)}
+                          style={{ fontSize: 12, fontWeight: 700, border: val === v ? '2px solid #f5601e' : '2px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '5px 12px', background: val === v ? 'rgba(245,96,30,0.25)' : 'transparent', color: '#fff', cursor: 'pointer' }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button onClick={() => setAchieveStep(3)}
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 9999, padding: '14px', fontSize: 14, fontWeight: 700, color: '#aaa', cursor: 'pointer' }}>
+                  スキップ
+                </button>
+                <button onClick={() => setAchieveStep(3)}
+                  style={{ flex: 2, background: '#f5601e', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer' }}>
+                  打ち上げる！
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: 演出再生 */}
+          {achieveStep === 3 && (() => {
+            const bgMap = { '🎆': '#000', '🏮': '#0a0a2e', '☄️': '#000', '🦋': '#1a0a2e', '🎈': '#87ceeb' }
+            const msgColorMap = { white: '#fff', orange: '#f5601e', gold: '#ffd700' }
+            const msgSizeMap = { large: 22, mid: 16, small: 12 }
+            const msgPosStyle = { top: { top: '12%' }, mid: { top: '45%', transform: 'translateY(-50%)' }, bot: { bottom: '22%' } }
+            const demoMsgs = [
+              { id: 1, text: 'おめでとう！', own: false },
+              { id: 2, text: 'すごい！', own: false },
+              { id: 3, text: 'ずっと応援してたよ', own: true },
+              { id: 4, text: '感動した🥹', own: false },
+              { id: 5, text: '夢が叶ったね✨', own: false },
+            ]
+            return (
+              <div style={{ position: 'absolute', inset: 0, background: bgMap[achieveEffect], overflow: 'hidden' }}>
+                <button onClick={() => setAchieveModal(null)} style={S.lightboxClose}>×</button>
+
+                {/* Canvas: 花火 */}
+                {achieveEffect === '🎆' && <canvas ref={fireworkCanvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />}
+
+                {/* ランタン */}
+                {achieveEffect === '🏮' && achieveEffectItems.map(item => (
+                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -60, fontSize: 36 * item.size, animation: `lanternRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px`, filter: 'drop-shadow(0 0 12px rgba(255,140,0,0.8))' }}>🏮</div>
+                ))}
+
+                {/* 流星群 */}
+                {achieveEffect === '☄️' && achieveEffectItems.map(item => (
+                  <div key={item.id} style={{ position: 'absolute', right: `${item.left}%`, top: `${10 + (item.id * 6) % 40}%`, width: 2 + item.size * 2, height: 80 + item.size * 40, background: `linear-gradient(135deg, #fff, transparent)`, borderRadius: 99, animation: `meteorFall ${item.dur}s ${item.delay}s linear infinite`, transform: 'rotate(35deg)' }} />
+                ))}
+
+                {/* 光の蝶 */}
+                {achieveEffect === '🦋' && achieveEffectItems.map(item => (
+                  <div key={item.id} style={{ position: 'absolute', left: `${10 + (item.id * 8) % 80}%`, top: `${15 + (item.id * 7) % 65}%`, animation: `butterflyFloat ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'drop-shadow(0 0 8px rgba(200,150,255,0.9))' }}>
+                    <span style={{ fontSize: 28 * item.size, display: 'block', animation: `wingFlap 0.4s ${item.delay}s linear infinite` }}>🦋</span>
+                  </div>
+                ))}
+
+                {/* 風船 */}
+                {achieveEffect === '🎈' && achieveEffectItems.map(item => (
+                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -60, fontSize: 32 * item.size, animation: `balloonRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px` }}>🎈</div>
+                ))}
+
+                {/* 流れるメッセージ */}
+                {demoMsgs.map((msg, i) => (
+                  <div key={msg.id} style={{ position: 'absolute', top: `${14 + i * 13}%`, fontSize: 15, fontWeight: 700, color: msg.own ? '#f5601e' : '#fff', opacity: msg.own ? 1 : 0.85, whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.8)', animation: `scrollAchieve ${7 + i * 1.5}s ${i * 1.2}s linear infinite`, zIndex: 10, pointerEvents: 'none', ...(msg.own ? { animationName: 'scrollAchieve, achMsgBlink' } : {}) }}>
+                    {msg.text}
+                  </div>
+                ))}
+
+                {/* 達成者のひとこと */}
+                {achieveMsg !== '' && (
+                  <div style={{ position: 'absolute', left: 0, right: 0, padding: '0 24px', textAlign: 'center', zIndex: 20, ...msgPosStyle[achieveMsgPos] }}>
+                    <span style={{ fontSize: msgSizeMap[achieveMsgSize], fontWeight: 900, color: msgColorMap[achieveMsgColor], textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{achieveMsg}</span>
+                  </div>
+                )}
+
+                {/* 下部：達成者情報 */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent,rgba(0,0,0,0.8))', padding: '32px 20px 24px', zIndex: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f5601e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, flexShrink: 0 }}>{achieveModal.post.initials}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{achieveModal.post.author}</div>
+                      <div style={{ fontSize: 12, color: '#aaa' }}>1,000 Posi達成！🎉</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, color: '#ddd', lineHeight: 1.5 }}>{achieveModal.post.text}</div>
+                </div>
+
+                {/* 共有ボタン */}
+                <button onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${achieveModal.post.author}さんが1,000 Posi達成🎆 #POSI https://posi-2o6x.vercel.app`)}`, '_blank')}
+                  style={{ position: 'absolute', bottom: 24, right: 20, background: '#1a1a2e', border: 'none', borderRadius: 99, padding: '8px 16px', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', zIndex: 30 }}>
+                  共有
+                </button>
+              </div>
+            )
+          })()}
         </div>
       )}
 
