@@ -107,6 +107,13 @@ export default function FeedPage() {
   const [authNickname, setAuthNickname] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+  const [goals, setGoals] = useState([])
+  const [goalModal, setGoalModal] = useState(null) // null | 'add' | {goal} for edit
+  const [goalText, setGoalText] = useState('')
+  const [goalDeadline, setGoalDeadline] = useState('')
+  const [goalMenuId, setGoalMenuId] = useState(null)
+  const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null)
+  const goalLongRef = useRef(null)
   const [postText, setPostText] = useState('')
   const [postPhotoFile, setPostPhotoFile] = useState(null)
   const [postPhotoPreview, setPostPhotoPreview] = useState(null)
@@ -488,6 +495,51 @@ export default function FeedPage() {
     setAuthScreen(screen); setAuthError(''); setAuthEmail(''); setAuthPassword(''); setAuthNickname('')
   }
 
+  useEffect(() => {
+    if (!currentUser) { setGoals([]); return }
+    const loadGoals = async () => {
+      try {
+        const q = query(collection(db, 'users', currentUser.uid, 'goals'), orderBy('createdAt', 'asc'))
+        const snap = await getDocs(q)
+        setGoals(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      } catch (e) { console.error(e) }
+    }
+    loadGoals()
+  }, [currentUser])
+
+  const openGoalAdd = () => { setGoalModal('add'); setGoalText(''); setGoalDeadline('') }
+  const openGoalEdit = (g) => { setGoalModal(g); setGoalText(g.text); setGoalDeadline(g.deadline || '') }
+
+  const saveGoal = async () => {
+    if (!goalText.trim() || !currentUser) return
+    const color = hashColor(goalText)
+    const data = { text: goalText.trim(), deadline: goalDeadline || null, isAchieved: false, color, createdAt: serverTimestamp() }
+    const ref = await addDoc(collection(db, 'users', currentUser.uid, 'goals'), data)
+    setGoals(gs => [...gs, { id: ref.id, ...data, createdAt: new Date() }])
+    setGoalModal(null)
+  }
+
+  const updateGoal = async () => {
+    if (!goalText.trim() || !currentUser || !goalModal?.id) return
+    const updates = { text: goalText.trim(), deadline: goalDeadline || null }
+    await updateDoc(doc(db, 'users', currentUser.uid, 'goals', goalModal.id), updates).catch(console.error)
+    setGoals(gs => gs.map(g => g.id === goalModal.id ? { ...g, ...updates } : g))
+    setGoalModal(null)
+  }
+
+  const achieveGoal = async (gid) => {
+    await updateDoc(doc(db, 'users', currentUser.uid, 'goals', gid), { isAchieved: true }).catch(console.error)
+    setGoals(gs => gs.map(g => g.id === gid ? { ...g, isAchieved: true } : g))
+    setGoalMenuId(null)
+  }
+
+  const deleteGoal = async (gid) => {
+    const { deleteDoc } = await import('firebase/firestore')
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'goals', gid)).catch(console.error)
+    setGoals(gs => gs.filter(g => g.id !== gid))
+    setGoalMenuId(null); setGoalDeleteConfirm(null)
+  }
+
   const finishOnboarding = () => {
     localStorage.setItem('posi_onboarded', '1')
     setOnboardingDone(true)
@@ -727,18 +779,25 @@ export default function FeedPage() {
 
             <div style={S.sectionHeader}>
               <span style={S.sectionTitle}>🎯 目標</span>
-              <span style={S.sectionAction}>＋ 追加</span>
+              <span style={S.sectionAction} onClick={openGoalAdd}>＋ 追加</span>
             </div>
-            {MOCK_PROFILE.goals.map(g => (
-              <div key={g.id} style={{ ...S.goalCard, ...(g.achieved ? S.goalCardDone : {}) }}>
+            {goals.map(g => (
+              <div
+                key={g.id}
+                style={{ ...S.goalCard, borderLeft: `3px solid ${g.color || 'var(--orange)'}`, ...(g.isAchieved ? S.goalCardDone : {}) }}
+                onMouseDown={() => { goalLongRef.current = setTimeout(() => { setGoalMenuId(g.id); goalLongRef.current = null }, 500) }}
+                onMouseUp={() => { if (goalLongRef.current) { clearTimeout(goalLongRef.current); goalLongRef.current = null } }}
+                onTouchStart={() => { goalLongRef.current = setTimeout(() => { setGoalMenuId(g.id); goalLongRef.current = null }, 500) }}
+                onTouchEnd={() => { if (goalLongRef.current) { clearTimeout(goalLongRef.current); goalLongRef.current = null } }}
+              >
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: g.achieved ? 'var(--text-sub)' : 'var(--text)', textDecoration: g.achieved ? 'line-through' : 'none' }}>{g.text}</div>
-                  {g.date && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3 }}>{g.date}</div>}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: g.isAchieved ? 'var(--text-sub)' : 'var(--text)', textDecoration: g.isAchieved ? 'line-through' : 'none' }}>{g.text}</div>
+                  {g.deadline && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3 }}>期限 {g.deadline}</div>}
                 </div>
-                {g.achieved && <span style={S.achievedBadge}>達成 ✓</span>}
+                {g.isAchieved && <span style={S.achievedBadge}>達成 ✓</span>}
               </div>
             ))}
-            <button style={S.addGoalBtn}>＋ 目標を追加する</button>
+            <button style={S.addGoalBtn} onClick={openGoalAdd}>＋ 目標を追加する</button>
 
             <div style={{ ...S.sectionHeader, marginTop: 8 }}>
               <span style={S.sectionTitle}>最近の投稿</span>
@@ -1381,6 +1440,81 @@ export default function FeedPage() {
               </div>
             )
           })()}
+        </div>
+      )}
+
+      {goalModal && (
+        <div style={S.msgOverlay} onClick={() => setGoalModal(null)}>
+          <div style={S.msgSheet} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
+              {goalModal === 'add' ? '目標を追加' : '目標を編集'}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <textarea
+                style={{ ...S.postTextarea, minHeight: 80, resize: 'none' }}
+                placeholder="目標を入力してください（50文字以内）"
+                maxLength={50}
+                value={goalText}
+                onChange={e => setGoalText(e.target.value)}
+                rows={3}
+                autoFocus
+              />
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 6 }}>期限（任意）</div>
+                <input
+                  type="date"
+                  style={{ ...S.authInput, padding: '10px 12px', fontSize: 14 }}
+                  value={goalDeadline}
+                  onChange={e => setGoalDeadline(e.target.value)}
+                />
+              </div>
+              <button
+                style={{ ...S.submitPostBtn, ...(!goalText.trim() ? S.submitPostBtnDisabled : {}) }}
+                onClick={goalModal === 'add' ? saveGoal : updateGoal}
+                disabled={!goalText.trim()}
+              >
+                {goalModal === 'add' ? '追加する' : '保存する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {goalMenuId && (
+        <div style={S.msgOverlay} onClick={() => setGoalMenuId(null)}>
+          <div style={S.msgSheet} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {[
+                ['編集', () => { const g = goals.find(x => x.id === goalMenuId); setGoalMenuId(null); openGoalEdit(g) }],
+                ['達成にする', () => achieveGoal(goalMenuId)],
+                ['削除', () => { setGoalDeleteConfirm(goalMenuId); setGoalMenuId(null) }],
+              ].map(([label, action]) => (
+                <button key={label} onClick={action}
+                  style={{ background: 'none', border: 'none', padding: '16px 0', fontSize: 15, fontWeight: 600, color: label === '削除' ? '#e53935' : 'var(--text)', cursor: 'pointer', borderBottom: '0.5px solid var(--card-border)', textAlign: 'left' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {goalDeleteConfirm && (
+        <div style={S.msgOverlay} onClick={() => setGoalDeleteConfirm(null)}>
+          <div style={{ ...S.msgSheet, gap: 16 }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>この目標を削除しますか？</div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>削除すると元に戻せません</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setGoalDeleteConfirm(null)}
+                style={{ flex: 1, background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 9999, padding: '12px', fontSize: 14, fontWeight: 700, color: 'var(--text-sub)', cursor: 'pointer' }}>
+                キャンセル
+              </button>
+              <button onClick={() => deleteGoal(goalDeleteConfirm)}
+                style={{ flex: 1, background: '#e53935', border: 'none', borderRadius: 9999, padding: '12px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
+                削除する
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
