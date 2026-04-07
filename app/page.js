@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { getApp } from 'firebase/app'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, auth } from './lib/firebase'
+import { db, auth, getMessagingInstance } from './lib/firebase'
 import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { setDoc, getDoc } from 'firebase/firestore'
@@ -185,6 +185,23 @@ export default function FeedPage() {
     return () => clearInterval(t)
   }, [])
 
+  const registerFcmToken = async (uid) => {
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') return
+      const { getToken } = await import('firebase/messaging')
+      const messaging = await getMessagingInstance()
+      if (!messaging) return
+      const token = await getToken(messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_FCM_VAPID_KEY,
+        serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js'),
+      })
+      if (token) {
+        await setDoc(doc(db, 'users', uid), { fcmToken: token }, { merge: true })
+      }
+    } catch (e) { console.error('FCM token error:', e) }
+  }
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -194,6 +211,7 @@ export default function FeedPage() {
           const snap = await getDoc(doc(db, 'users', user.uid))
           if (snap.exists()) setUserProfile(snap.data())
         } catch (e) { console.error(e) }
+        registerFcmToken(user.uid)
       } else {
         setCurrentUser(null)
         setUserProfile(null)
@@ -229,6 +247,7 @@ export default function FeedPage() {
           target: 1000,
           time: d.data().createdAt?.toDate ? formatTime(d.data().createdAt.toDate()) : '今',
           photo: d.data().imageUrl || null,
+          authorId: d.data().authorId || null,
         }))
         setPosts(loaded)
         setIdx(0)
@@ -322,7 +341,42 @@ export default function FeedPage() {
     }
     if (currentUser) {
       updateDoc(doc(db, 'posts', post.id), { congratsCount: increment(1) }).catch(console.error)
+      sendPosiNotification(post, newCount)
     }
+  }
+
+  const sendPosiNotification = async (targetPost, newCount) => {
+    if (!targetPost.authorId || targetPost.authorId === currentUser?.uid) return
+    try {
+      const authorSnap = await getDoc(doc(db, 'users', targetPost.authorId))
+      if (!authorSnap.exists()) return
+      const { fcmToken } = authorSnap.data()
+      if (!fcmToken) return
+      const senderName = userProfile?.nickname || currentUser?.displayName || 'だれか'
+      const isKirakira = newCount >= targetPost.target && targetPost.posiCount < targetPost.target
+
+      if (isKirakira) {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: fcmToken, title: '🎉 お祝いが始まりました！', body: 'みんなの応援ありがとう' }),
+        })
+        const myPosiSnap = await getDoc(doc(db, 'users', currentUser.uid))
+        if (myPosiSnap.exists() && myPosiSnap.data().fcmToken) {
+          await fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: myPosiSnap.data().fcmToken, title: '✨ お祝いに参加しました！', body: `あなたが応援した${targetPost.author}さんのお祝いが始まりました！` }),
+          })
+        }
+      } else {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: fcmToken, title: `👍 ${senderName}さんがPosiしてくれました！`, body: targetPost.text }),
+        })
+      }
+    } catch (e) { console.error('notify error:', e) }
   }
 
   const posiDown = (e) => {
