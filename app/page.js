@@ -52,7 +52,10 @@ const BG_PATTERNS = [
   { background: 'linear-gradient(135deg, #e1bee7, #ce93d8)', emoji: '🌙' },
 ]
 
-const getPattern = (id) => BG_PATTERNS[parseInt(id, 10) % BG_PATTERNS.length]
+const getPattern = (id) => {
+  const n = String(id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  return BG_PATTERNS[n % BG_PATTERNS.length]
+}
 
 export default function FeedPage() {
   const [posts, setPosts] = useState(MOCK_POSTS)
