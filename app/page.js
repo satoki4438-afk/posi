@@ -5,7 +5,8 @@ import { getApp } from 'firebase/app'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, auth } from './lib/firebase'
 import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp } from 'firebase/firestore'
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { setDoc, getDoc } from 'firebase/firestore'
 
 const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '🥹', '🎊', '🌈']
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
@@ -99,6 +100,13 @@ export default function FeedPage() {
   const [cheerEnergy, setCheerEnergy] = useState(15)
   const [shaking, setShaking] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
+  const [authScreen, setAuthScreen] = useState(null) // null | 'top' | 'register' | 'login'
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authNickname, setAuthNickname] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
   const [postText, setPostText] = useState('')
   const [postPhotoFile, setPostPhotoFile] = useState(null)
   const [postPhotoPreview, setPostPhotoPreview] = useState(null)
@@ -171,11 +179,18 @@ export default function FeedPage() {
   }, [])
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user)
+        setAuthScreen(null)
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid))
+          if (snap.exists()) setUserProfile(snap.data())
+        } catch (e) { console.error(e) }
       } else {
-        signInAnonymously(auth).catch(console.error)
+        setCurrentUser(null)
+        setUserProfile(null)
+        setAuthScreen('top')
       }
     })
     return () => unsub()
@@ -409,9 +424,74 @@ export default function FeedPage() {
     return () => setAchieveEffectItems([])
   }, [achieveModal, achieveStep, achieveEffect])
 
+  const AUTH_ERRORS = {
+    'auth/email-already-in-use': 'このメールアドレスはすでに登録されています',
+    'auth/invalid-email': 'メールアドレスの形式が正しくありません',
+    'auth/weak-password': 'パスワードは8文字以上にしてください',
+    'auth/user-not-found': 'メールアドレスまたはパスワードが違います',
+    'auth/wrong-password': 'メールアドレスまたはパスワードが違います',
+    'auth/invalid-credential': 'メールアドレスまたはパスワードが違います',
+    'auth/too-many-requests': 'しばらく時間をおいてから再試行してください',
+    'auth/popup-closed-by-user': 'ログインがキャンセルされました',
+  }
+
+  const saveUserProfile = async (user, nickname) => {
+    const data = { uid: user.uid, nickname: nickname || user.displayName || 'ユーザー', email: user.email || '', createdAt: serverTimestamp() }
+    await setDoc(doc(db, 'users', user.uid), data, { merge: true })
+    setUserProfile(data)
+  }
+
+  const handleGoogle = async () => {
+    setAuthError(''); setAuthLoading(true)
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider())
+      const user = result.user
+      const snap = await getDoc(doc(db, 'users', user.uid))
+      if (!snap.exists()) await saveUserProfile(user, user.displayName)
+    } catch (e) {
+      setAuthError(AUTH_ERRORS[e.code] || 'ログインに失敗しました')
+    } finally { setAuthLoading(false) }
+  }
+
+  const handleRegister = async () => {
+    if (!authNickname.trim()) { setAuthError('ニックネームを入力してください'); return }
+    if (authPassword.length < 8) { setAuthError('パスワードは8文字以上にしてください'); return }
+    setAuthError(''); setAuthLoading(true)
+    try {
+      const result = await createUserWithEmailAndPassword(auth, authEmail, authPassword)
+      await saveUserProfile(result.user, authNickname.trim())
+    } catch (e) {
+      setAuthError(AUTH_ERRORS[e.code] || '登録に失敗しました')
+    } finally { setAuthLoading(false) }
+  }
+
+  const handleLogin = async () => {
+    setAuthError(''); setAuthLoading(true)
+    try {
+      await signInWithEmailAndPassword(auth, authEmail, authPassword)
+    } catch (e) {
+      setAuthError(AUTH_ERRORS[e.code] || 'ログインに失敗しました')
+    } finally { setAuthLoading(false) }
+  }
+
+  const handlePasswordReset = async () => {
+    if (!authEmail) { setAuthError('メールアドレスを入力してください'); return }
+    try {
+      await sendPasswordResetEmail(auth, authEmail)
+      setAuthError('パスワードリセットメールを送信しました')
+    } catch (e) {
+      setAuthError(AUTH_ERRORS[e.code] || '送信に失敗しました')
+    }
+  }
+
+  const openAuthScreen = (screen) => {
+    setAuthScreen(screen); setAuthError(''); setAuthEmail(''); setAuthPassword(''); setAuthNickname('')
+  }
+
   const finishOnboarding = () => {
     localStorage.setItem('posi_onboarded', '1')
     setOnboardingDone(true)
+    if (!currentUser) setAuthScreen('top')
   }
 
   const closePost = () => {
@@ -441,7 +521,7 @@ export default function FeedPage() {
         imageUrl: photoUrl,
         patternId: postPhotoFile ? null : postPatternId,
         authorId: currentUser?.uid || null,
-        authorName: '名無し',
+        authorName: userProfile?.nickname || currentUser?.displayName || '名無し',
         congratsCount: 0,
         createdAt: serverTimestamp(),
         reported: false,
@@ -1304,6 +1384,71 @@ export default function FeedPage() {
         </div>
       )}
 
+      {authScreen && !achieveModal && onboardingDone && (
+        <div style={S.authOverlay}>
+          <div style={S.authHeader}><span style={S.logo}>POSI.</span></div>
+
+          {authScreen === 'top' && (
+            <div style={S.authBody}>
+              <div style={S.authTitle}>はじめよう</div>
+              <div style={{ fontSize: 14, color: 'var(--text-sub)', textAlign: 'center', marginBottom: 32 }}>おめでとうだけが存在する場所</div>
+
+              <button style={S.googleBtn} onClick={handleGoogle} disabled={authLoading}>
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.1-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 16.3 3 9.6 7.9 6.3 14.7z"/><path fill="#FBBC05" d="M24 45c5.5 0 10.5-1.9 14.3-5l-6.6-5.4C29.8 36.2 27 37 24 37c-5.8 0-10.7-3.1-11.8-7.5l-7 5.4C8.9 41.2 15.9 45 24 45z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2-1.8 3.7-3.4 5l6.6 5.4C42.3 35.7 45 30.3 45 24c0-1.4-.2-2.7-.5-4z"/></svg>
+                {authLoading ? '処理中...' : 'Googleでログイン'}
+              </button>
+
+              <button style={S.emailRegisterBtn} onClick={() => openAuthScreen('register')} disabled={authLoading}>
+                メールアドレスで登録
+              </button>
+
+              {authError && <div style={S.authError}>{authError}</div>}
+
+              <button style={S.authLinkBtn} onClick={() => openAuthScreen('login')}>
+                すでにアカウントをお持ちの方はこちら
+              </button>
+            </div>
+          )}
+
+          {authScreen === 'register' && (
+            <div style={S.authBody}>
+              <button style={S.authBack} onClick={() => openAuthScreen('top')}>← 戻る</button>
+              <div style={S.authTitle}>新規登録</div>
+
+              <input style={S.authInput} type="email" placeholder="メールアドレス" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
+              <input style={S.authInput} type="password" placeholder="パスワード（8文字以上）" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
+              <input style={S.authInput} type="text" placeholder="ニックネーム（プロフに表示される名前）" value={authNickname} onChange={e => setAuthNickname(e.target.value)} maxLength={20} />
+
+              {authError && <div style={S.authError}>{authError}</div>}
+
+              <button style={S.emailRegisterBtn} onClick={handleRegister} disabled={authLoading || !authEmail || !authPassword || !authNickname}>
+                {authLoading ? '登録中...' : '登録する'}
+              </button>
+            </div>
+          )}
+
+          {authScreen === 'login' && (
+            <div style={S.authBody}>
+              <button style={S.authBack} onClick={() => openAuthScreen('top')}>← 戻る</button>
+              <div style={S.authTitle}>ログイン</div>
+
+              <input style={S.authInput} type="email" placeholder="メールアドレス" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
+              <input style={S.authInput} type="password" placeholder="パスワード" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
+
+              {authError && <div style={S.authError}>{authError}</div>}
+
+              <button style={S.emailRegisterBtn} onClick={handleLogin} disabled={authLoading || !authEmail || !authPassword}>
+                {authLoading ? 'ログイン中...' : 'ログイン'}
+              </button>
+
+              <button style={S.authLinkBtn} onClick={handlePasswordReset}>
+                パスワードをお忘れの方はこちら
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {!onboardingDone && (
         <div style={S.onboardOverlay}>
           <style>{`
@@ -1522,6 +1667,17 @@ const S = {
   postDoneScreen: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
   postDoneText: { fontSize: 28, fontWeight: 900, color: 'var(--orange)', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative', textAlign: 'center', marginBottom: 4 },
   shareBtn: { display: 'block', width: '100%', background: '#1a1a2e', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
+
+  authOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 450, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
+  authHeader: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
+  authBody: { flex: 1, display: 'flex', flexDirection: 'column', padding: '32px 24px', gap: 14, overflowY: 'auto' },
+  authTitle: { fontSize: 24, fontWeight: 900, color: 'var(--text)', textAlign: 'center', marginBottom: 4 },
+  authInput: { width: '100%', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '14px', fontSize: 15, fontFamily: 'inherit', outline: 'none', background: 'var(--card-bg)', color: 'var(--text)', boxSizing: 'border-box' },
+  googleBtn: { width: '100%', background: '#fff', border: '1.5px solid var(--card-border)', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  emailRegisterBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
+  authLinkBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--orange)', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'underline', padding: '4px 0' },
+  authBack: { background: 'none', border: 'none', fontSize: 14, color: 'var(--text-sub)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '0 0 8px' },
+  authError: { fontSize: 13, color: '#e53935', fontWeight: 600, textAlign: 'center', background: '#ffebee', borderRadius: 8, padding: '10px 14px' },
 
   onboardOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', maxWidth: 480, margin: '0 auto', padding: '0 32px 40px' },
   onboardSkip: { position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer' },
