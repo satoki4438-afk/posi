@@ -9,32 +9,11 @@ const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
 
 const MOCK_POSTS = [
-  { id: '1',  author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                          posiCount: 847, target: 1000, time: '2分前',   photo: 'https://picsum.photos/seed/marathon1/400/220' },
-  { id: '2',  author: 'はなこ',   initials: 'は', text: 'TOEIC 900点超えた。3年間の勉強がついに実った！',                posiCount: 234, target: 1000, time: '15分前' },
-  { id: '3',  author: 'けんじ',   initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ',            posiCount: 992, target: 1000, time: '1時間前', photo: 'https://picsum.photos/seed/cafe99/400/220' },
-  { id: '4',  author: 'みさき',   initials: 'み', text: '子供が初めて自転車に乗れた！1週間の練習の成果',                posiCount: 156, target: 1000, time: '2時間前' },
-  { id: '5',  author: 'ゆうき',   initials: 'ゆ', text: '独学3ヶ月でWebアプリ完成させた。ついにリリースできた！',        posiCount: 421, target: 1000, time: '3時間前' },
-  { id: '6',  author: 'りょうた', initials: 'り', text: 'ベンチプレス100kg達成！1年半かかったけどやっと三桁！',          posiCount: 763, target: 1000, time: '5分前',   photo: 'https://picsum.photos/seed/gym42/400/220' },
-  { id: '7',  author: 'あやか',   initials: 'あ', text: '簿記2級、一発合格した！毎朝5時起きで勉強した甲斐があった',      posiCount: 88,  target: 1000, time: '32分前' },
-  { id: '8',  author: 'だいき',   initials: 'だ', text: '初めての営業で契約取れた！断られ続けて2ヶ月、ようやく',        posiCount: 519, target: 1000, time: '45分前' },
-  { id: '9',  author: 'なつみ',   initials: 'な', text: '毎日続けてた日記、今日でちょうど1年になった📖',                posiCount: 302, target: 1000, time: '1時間前', photo: 'https://picsum.photos/seed/notebook7/400/220' },
-  { id: '10', author: 'しょうた', initials: 'し', text: 'スクワット自重100回、ノンストップでできた！半年前は30回だった',  posiCount: 671, target: 1000, time: '2時間前' },
-  { id: '11', author: 'まい',     initials: 'ま', text: '転職活動、内定もらえた！希望の会社に行けます',                  posiCount: 950, target: 1000, time: '2時間前' },
-  { id: '12', author: 'こうへい', initials: 'こ', text: '子供と一緒に作った工作、学校で金賞取れた！',                    posiCount: 137, target: 1000, time: '3時間前', photo: 'https://picsum.photos/seed/craft55/400/220' },
-  { id: '13', author: 'えり',     initials: 'え', text: 'ランニング累計500km達成。毎朝コツコツ積み上げた結果',            posiCount: 408, target: 1000, time: '4時間前' },
-  { id: '14', author: 'とも',     initials: 'と', text: '苦手だった英語の発表、今日は震えなかった。小さな一歩',          posiCount: 54,  target: 1000, time: '5時間前' },
-  { id: '15', author: 'かずや',   initials: 'か', text: 'フリーランス1年目の確定申告、自力で乗り越えた！',              posiCount: 829, target: 1000, time: '6時間前' },
-  { id: '16', author: 'のぞみ',   initials: 'の', text: '初めてのハーフマラソン、2時間10分で完走！',                    posiCount: 612, target: 1000, time: '7時間前', photo: 'https://picsum.photos/seed/run88/400/220' },
-  { id: '17', author: 'たいち',   initials: 'た', text: '宅建の試験、合格できた！独学8ヶ月の勉強が実を結んだ',            posiCount: 278, target: 1000, time: '8時間前' },
-  { id: '18', author: 'さくら',   initials: 'さ', text: '初めて自分で料理した手作りケーキ、家族に大好評だった！',        posiCount: 445, target: 1000, time: '9時間前', photo: 'https://picsum.photos/seed/cake33/400/220' },
-  { id: '19', author: 'ひろき',   initials: 'ひ', text: 'デッドリフト150kg達成。2年かかったけど目標クリア！',            posiCount: 733, target: 1000, time: '10時間前' },
-  { id: '20', author: 'ゆいな',   initials: 'ゆ', text: 'ブログ100記事書いた！毎週更新してついに達成',                  posiCount: 91,  target: 1000, time: '11時間前' },
-  { id: '21', author: 'けいすけ', initials: 'け', text: 'チームで開発したアプリ、App Storeの審査が通過した！',           posiCount: 884, target: 1000, time: '12時間前', photo: 'https://picsum.photos/seed/phone22/400/220' },
-  { id: '22', author: 'あいこ',   initials: 'あ', text: '子供の寝かしつけ後に毎日1時間勉強、ついにFP2級合格',           posiCount: 322, target: 1000, time: '13時間前' },
-  { id: '23', author: 'まさと',   initials: 'ま', text: '懸垂20回連続できた！毎日コツコツやり続けた1年の成果',           posiCount: 567, target: 1000, time: '14時間前' },
-  { id: '24', author: 'りな',     initials: 'り', text: '育休明け初日、無事に乗り越えた。職場のみんなに感謝',            posiCount: 719, target: 1000, time: '15時間前', photo: 'https://picsum.photos/seed/office11/400/220' },
-  { id: '25', author: 'しんじ',   initials: 'し', text: '家族で植えた家庭菜園、初めてのトマトが収穫できた！',            posiCount: 183, target: 1000, time: '16時間前', photo: 'https://picsum.photos/seed/garden5/400/220' },
-  { id: '26', author: 'けいた',   initials: 'け', text: '富士山登頂した！3776m制覇',                                      posiCount: 512, target: 1000, time: '30分前',  photo: 'https://picsum.photos/seed/fuji26/400/500' },
+  { id: '1', author: 'たろう', initials: 'た', text: '今日マラソン完走した！初めての10km！',            posiCount: 847, target: 1000, time: '今すぐ',   photo: 'https://picsum.photos/seed/run/400/300' },
+  { id: '2', author: 'だいき', initials: 'だ', text: '初めての営業で契約取れた！断られ続けて2ヶ月、ようやく', posiCount: 519, target: 1000, time: '45分前' },
+  { id: '3', author: 'なつみ', initials: 'な', text: '毎日続けてた日記、今日でちょうど1年になった',      posiCount: 302, target: 1000, time: '1時間前' },
+  { id: '4', author: 'みさき', initials: 'み', text: '子供が初めて自転車に乗れた！1週間の練習の成果',    posiCount: 156, target: 1000, time: '2時間前' },
+  { id: '5', author: 'けんじ', initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ', posiCount: 992, target: 1000, time: '3時間前', photo: 'https://picsum.photos/seed/cafe/400/300' },
 ]
 
 const USER_TIER = 'free'
@@ -57,64 +36,13 @@ const MOCK_PROFILE = {
   ],
 }
 
-const MOCK_FIREWORKS = [
-  { id: 'fw1', author: 'けんじ', initials: 'け', text: '念願のカフェ開店！', hoursLeft: 3,  expired: false,
-    messages: [
-      { id: 'f1m1', text: 'おめでとう！', own: false },
-      { id: 'f1m2', text: 'ずっと応援してたよ', own: true },
-      { id: 'f1m3', text: 'カフェ行きたい！', own: false },
-      { id: 'f1m4', text: 'すごい！夢が叶ったね', own: false },
-      { id: 'f1m5', text: '頑張ったね🎉', own: false },
-    ]
-  },
-  { id: 'fw2', author: 'まい',   initials: 'ま', text: '転職内定もらえた！', hoursLeft: 0,  expired: true,
-    messages: [
-      { id: 'f2m1', text: 'おめでとう！', own: false },
-      { id: 'f2m2', text: '新天地でも頑張れ', own: false },
-    ]
-  },
-  { id: 'fw3', author: 'たろう', initials: 'た', text: '10kmマラソン完走！', hoursLeft: 11, expired: false,
-    messages: [
-      { id: 'f3m1', text: '走り切ったね！', own: false },
-      { id: 'f3m2', text: '諦めずに練習した成果！', own: true },
-      { id: 'f3m3', text: 'かっこいい', own: false },
-    ]
-  },
-  { id: 'fw4', author: 'りな',   initials: 'り', text: '育休明け初日乗り越えた', hoursLeft: 6, expired: false,
-    messages: [
-      { id: 'f4m1', text: 'お疲れ様！', own: false },
-      { id: 'f4m2', text: 'よく頑張った', own: false },
-      { id: 'f4m3', text: '応援してるよ', own: true },
-      { id: 'f4m4', text: '無理しないでね', own: false },
-    ]
-  },
-]
+const MOCK_FIREWORKS = []
 
-const MOCK_FRIENDS = [
-  { id: 'fr1', initials: 'け', name: 'けんじ' },
-  { id: 'fr2', initials: 'ま', name: 'まい' },
-  { id: 'fr3', initials: 'た', name: 'たろう' },
-  { id: 'fr4', initials: 'り', name: 'りな' },
-  { id: 'fr5', initials: 'は', name: 'はなこ' },
-  { id: 'fr6', initials: 'だ', name: 'だいき' },
-]
+const MOCK_FRIENDS = []
 
-const MOCK_CHEERS_HISTORY = [
-  { id: 'ch1', author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                time: '2分前',   photo: 'https://picsum.photos/seed/marathon1/400/220' },
-  { id: 'ch2', author: 'はなこ',   initials: 'は', text: 'TOEIC 900点超えた。3年間の勉強がついに実った！',    time: '15分前' },
-  { id: 'ch3', author: 'りょうた', initials: 'り', text: 'ベンチプレス100kg達成！1年半かかったけどやっと三桁！', time: '5分前',  photo: 'https://picsum.photos/seed/gym42/400/220' },
-  { id: 'ch4', author: 'えり',     initials: 'え', text: 'ランニング累計500km達成。毎朝コツコツ積み上げた結果', time: '4時間前' },
-  { id: 'ch5', author: 'なつみ',   initials: 'な', text: '毎日続けてた日記、今日でちょうど1年になった📖',      time: '1時間前', photo: 'https://picsum.photos/seed/notebook7/400/220' },
-  { id: 'ch6', author: 'しょうた', initials: 'し', text: 'スクワット自重100回、ノンストップでできた！',         time: '2時間前' },
-]
+const MOCK_CHEERS_HISTORY = []
 
-const MOCK_ACHIEVED = [
-  { id: 'ac1', author: 'けんじ',   initials: 'け', text: '念願のカフェ、今日オープンしました！店主になったよ',      achievedDate: '4/3', posiCount: 1000, photo: 'https://picsum.photos/seed/cafe99/400/220' },
-  { id: 'ac2', author: 'まい',     initials: 'ま', text: '転職活動、内定もらえた！希望の会社に行けます',            achievedDate: '4/3', posiCount: 1000 },
-  { id: 'ac3', author: 'りな',     initials: 'り', text: '育休明け初日、無事に乗り越えた。職場のみんなに感謝',      achievedDate: '4/2', posiCount: 1000, photo: 'https://picsum.photos/seed/office11/400/220' },
-  { id: 'ac4', author: 'たろう',   initials: 'た', text: '今日マラソン完走した！初めての10km！',                    achievedDate: '4/1', posiCount: 1000, photo: 'https://picsum.photos/seed/marathon1/400/220' },
-  { id: 'ac5', author: 'こうへい', initials: 'こ', text: '子供と一緒に作った工作、学校で金賞取れた！',              achievedDate: '3/31', posiCount: 1000, photo: 'https://picsum.photos/seed/craft55/400/220' },
-]
+const MOCK_ACHIEVED = []
 
 const BG_PATTERNS = [
   { background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', emoji: '🌿' },
