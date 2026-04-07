@@ -796,7 +796,7 @@ export default function FeedPage() {
 
   return (
     <div style={S.root}>
-      <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} }`}</style>
+      <style>{`@keyframes soonBlink { 0%,100%{opacity:1} 50%{opacity:0.6} } @keyframes notifSlideDown { from { transform: translateY(-110%) } to { transform: translateY(0) } }`}</style>
       <header style={S.header}>
         <span style={S.logo}>POSI.</span>
         {currentUser && (
@@ -1750,25 +1750,27 @@ export default function FeedPage() {
       )}
 
       {notifDrawerOpen && (
-        <div style={S.notifOverlay} onClick={() => setNotifDrawerOpen(false)} />
-      )}
-      <div style={{ ...S.notifDrawer, transform: notifDrawerOpen ? 'translateY(0)' : 'translateY(-110%)' }}>
-        <div style={S.notifHeader}>
-          <span style={S.notifTitle}>通知</span>
-          <button style={S.notifClose} onClick={() => setNotifDrawerOpen(false)}>✕</button>
-        </div>
-        <div style={S.notifList}>
-          {notifications.length === 0 ? (
-            <div style={S.notifEmpty}>まだ通知がありません</div>
-          ) : notifications.map(n => (
-            <div key={n.id} style={{ ...S.notifItem, ...(n.isRead ? S.notifItemRead : {}) }} onClick={() => markNotifRead(n)}>
-              <div style={S.notifItemTitle}>{n.title}</div>
-              {n.body ? <div style={S.notifItemBody}>{n.body}</div> : null}
-              {!n.isRead && <div style={S.notifUnreadDot} />}
+        <>
+          <div style={S.notifOverlay} onClick={() => setNotifDrawerOpen(false)} />
+          <div style={S.notifDrawer} onClick={e => e.stopPropagation()}>
+            <div style={S.notifHeader}>
+              <span style={S.notifTitle}>通知</span>
+              <button style={S.notifClose} onClick={() => setNotifDrawerOpen(false)}>✕</button>
             </div>
-          ))}
-        </div>
-      </div>
+            <div style={S.notifList}>
+              {notifications.length === 0 ? (
+                <div style={S.notifEmpty}>まだ通知がありません</div>
+              ) : notifications.map(n => (
+                <div key={n.id} style={{ ...S.notifItem, ...(n.isRead ? S.notifItemRead : {}) }} onClick={() => markNotifRead(n)}>
+                  <div style={S.notifItemTitle}>{n.title}</div>
+                  {n.body ? <div style={S.notifItemBody}>{n.body}</div> : null}
+                  {!n.isRead && <div style={S.notifUnreadDot} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -1777,10 +1779,10 @@ const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
   header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'var(--orange)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
-  bellBtn: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  bellBtn: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   bellBadge: { position: 'absolute', top: 0, right: 0, background: '#e53935', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', lineHeight: 1 },
-  notifOverlay: { position: 'fixed', inset: 0, zIndex: 49 },
-  notifDrawer: { position: 'fixed', top: 60, right: 0, left: 0, maxWidth: 480, margin: '0 auto', background: 'var(--card-bg)', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', zIndex: 50, transition: 'transform 0.28s cubic-bezier(0.34,1.0,0.64,1)', maxHeight: '70vh', display: 'flex', flexDirection: 'column' },
+  notifOverlay: { position: 'fixed', inset: 0, zIndex: 49, background: 'transparent' },
+  notifDrawer: { position: 'fixed', top: 60, right: 0, left: 0, maxWidth: 480, margin: '0 auto', background: 'var(--card-bg)', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', zIndex: 50, animation: 'notifSlideDown 0.25s cubic-bezier(0.34,1.0,0.64,1)', maxHeight: '70vh', display: 'flex', flexDirection: 'column' },
   notifHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '0.5px solid var(--card-border)' },
   notifTitle: { fontSize: 16, fontWeight: 800, color: 'var(--text)' },
   notifClose: { background: 'none', border: 'none', fontSize: 16, color: 'var(--text-sub)', cursor: 'pointer', padding: 4 },
