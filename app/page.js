@@ -634,15 +634,105 @@ export default function FeedPage() {
   }, [achieveModal, achieveStep, achieveEffect])
 
   useEffect(() => {
+    if (!achieveModal || achieveStep !== 3 || achieveEffect !== '🏮') return
+    const canvas = fireworkCanvasRef.current
+    if (!canvas) return
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    const ctx = canvas.getContext('2d')
+
+    const stars = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: 0.5 + Math.random() * 1.5, a: 0.2 + Math.random() * 0.6,
+      tw: Math.random() * Math.PI * 2, ts: 0.02 + Math.random() * 0.04,
+    }))
+    const lanterns = Array.from({ length: 22 }, () => ({
+      x: canvas.width * (0.05 + Math.random() * 0.9),
+      y: canvas.height + 60 + Math.random() * 300,
+      vy: -(0.35 + Math.random() * 0.45),
+      size: 0.5 + Math.random() * 0.9,
+      swayAmp: 12 + Math.random() * 22,
+      swaySpeed: 0.004 + Math.random() * 0.007,
+      swayPhase: Math.random() * Math.PI * 2,
+      alpha: 0, targetAlpha: 0.7 + Math.random() * 0.3,
+    }))
+
+    const drawLantern = (x, y, size, alpha) => {
+      const w = 18 * size, h = 26 * size
+      ctx.save()
+      // glow
+      const g = ctx.createRadialGradient(x, y, 0, x, y, w * 3.2)
+      g.addColorStop(0, `rgba(255,155,40,${alpha * 0.6})`)
+      g.addColorStop(0.4, `rgba(255,100,10,${alpha * 0.2})`)
+      g.addColorStop(1, 'rgba(255,80,0,0)')
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, w * 3.2, 0, Math.PI * 2); ctx.fill()
+      // body
+      ctx.globalAlpha = alpha
+      const r = w / 3
+      ctx.beginPath()
+      ctx.moveTo(x - w/2 + r, y - h/2)
+      ctx.arcTo(x + w/2, y - h/2, x + w/2, y + h/2, r)
+      ctx.arcTo(x + w/2, y + h/2, x - w/2, y + h/2, r)
+      ctx.arcTo(x - w/2, y + h/2, x - w/2, y - h/2, r)
+      ctx.arcTo(x - w/2, y - h/2, x + w/2, y - h/2, r)
+      ctx.closePath()
+      const bg = ctx.createRadialGradient(x, y - h/8, w * 0.08, x, y, w * 0.95)
+      bg.addColorStop(0, '#fff8d0'); bg.addColorStop(0.3, '#ffcc44')
+      bg.addColorStop(0.7, '#ff8800'); bg.addColorStop(1, '#aa3300')
+      ctx.fillStyle = bg; ctx.fill()
+      // stripes
+      ctx.strokeStyle = `rgba(160,50,0,${alpha * 0.45})`; ctx.lineWidth = 0.8 * size
+      for (let li = -1; li <= 1; li++) {
+        ctx.beginPath(); ctx.moveTo(x - w/2 + 3, y + li * h/4); ctx.lineTo(x + w/2 - 3, y + li * h/4); ctx.stroke()
+      }
+      // top cap
+      ctx.fillStyle = `rgba(90,25,0,${alpha})`
+      ctx.fillRect(x - w/4, y - h/2 - 4 * size, w/2, 5 * size)
+      // string
+      ctx.strokeStyle = `rgba(160,90,0,${alpha * 0.55})`; ctx.lineWidth = 0.8 * size
+      ctx.beginPath(); ctx.moveTo(x, y - h/2 - 4 * size); ctx.lineTo(x, y - h/2 - 11 * size); ctx.stroke()
+      // tassel
+      ctx.fillStyle = `rgba(200,55,0,${alpha * 0.85})`
+      ctx.fillRect(x - w/6, y + h/2, w/3, 5 * size)
+      ctx.restore()
+    }
+
+    const tick = () => {
+      ctx.fillStyle = 'rgba(5,3,22,0.22)'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+      stars.forEach(s => {
+        s.tw += s.ts
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(255,240,200,${s.a * (0.5 + 0.5 * Math.sin(s.tw))})`; ctx.fill()
+      })
+      lanterns.forEach(l => {
+        if (l.y < canvas.height + 20) l.alpha = Math.min(l.alpha + 0.008, l.targetAlpha)
+        l.swayPhase += l.swaySpeed
+        l.x += Math.sin(l.swayPhase) * l.swayAmp * 0.025
+        l.y += l.vy
+        l.x = Math.max(20, Math.min(canvas.width - 20, l.x))
+        if (l.y < -120) {
+          l.y = canvas.height + 60 + Math.random() * 100
+          l.x = canvas.width * (0.05 + Math.random() * 0.9)
+          l.alpha = 0; l.swayPhase = Math.random() * Math.PI * 2
+        }
+        if (l.alpha > 0.01) drawLantern(l.x, l.y, l.size, l.alpha)
+      })
+      fireworkAnimRef.current = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => cancelAnimationFrame(fireworkAnimRef.current)
+  }, [achieveModal, achieveStep, achieveEffect])
+
+  useEffect(() => {
     if (!achieveModal || achieveStep !== 3) return
     const effect = achieveEffect
     if (effect === '🎆') return
-    const count = effect === '🎈' ? 10 : effect === '🏮' ? 9 : effect === '☄️' ? 14 : 10
+    const count = effect === '🎈' ? 10 : effect === '🏮' ? 0 : effect === '☄️' ? 14 : 10
     const BALLOON_HUES = [0, 55, 165, 220, 105]
     const items = Array.from({ length: count }, (_, i) => ({
       id: i,
       left: 5 + Math.random() * 88,
-      dur: (effect === '🏮' || effect === '🎈') ? 9+Math.random()*6 : effect === '☄️' ? 4+Math.random()*3 : 7+Math.random()*5,
+      dur: effect === '🎈' ? 9+Math.random()*6 : effect === '☄️' ? 4+Math.random()*3 : 7+Math.random()*5,
       delay: Math.random() * 5,
       size: 0.5 + Math.random() * 0.7,
       sway: (Math.random() - 0.5) * 90,
@@ -1664,33 +1754,24 @@ export default function FeedPage() {
 
           {/* STEP 3: 演出再生 */}
           {achieveStep === 3 && (() => {
-            const bgMap = { '🎆': '#000', '🏮': '#0a0a2e', '☄️': '#000', '🦋': '#1a0a2e', '🎈': '#87ceeb' }
+            const bgMap = { '🎆': '#000', '🏮': '#05031a', '☄️': '#000', '🦋': '#1a0a2e', '🎈': '#87ceeb' }
+            const videoMap = { '🎆': '/videos/hanabi.mp4', '🏮': '/videos/rantan.mp4', '☄️': '/videos/ryusei.mp4', '🦋': '/videos/tyoutyou.mp4' }
             const msgColorMap = { white: '#fff', orange: '#f5601e', gold: '#ffd700' }
             const msgSizeMap = { large: 22, mid: 16, small: 12 }
             const msgPosStyle = { top: { top: '12%' }, mid: { top: '45%', transform: 'translateY(-50%)' }, bot: { bottom: '22%' } }
+            const videoSrc = videoMap[achieveEffect]
             return (
               <div style={{ position: 'absolute', inset: 0, background: bgMap[achieveEffect], overflow: 'hidden' }}>
                 <button onClick={() => setAchieveModal(null)} style={S.lightboxClose}>×</button>
 
-                {/* Canvas: 花火 */}
-                {achieveEffect === '🎆' && <canvas ref={fireworkCanvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />}
-
-                {/* ランタン */}
-                {achieveEffect === '🏮' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -80, fontSize: 50 + item.size * 20, animation: `lanternRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px`, filter: 'drop-shadow(0 0 18px rgba(255,160,0,0.95)) drop-shadow(0 0 40px rgba(255,100,0,0.45))' }}>🏮</div>
-                ))}
-
-                {/* 流星群 */}
-                {achieveEffect === '☄️' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', right: `${item.left}%`, top: `${5 + (item.id * 7) % 45}%`, width: 3 + item.size * 4, height: 90 + item.size * 60, background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(200,230,255,0.7), transparent)', borderRadius: 99, animation: `meteorFall ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'blur(0.5px)' }} />
-                ))}
-
-                {/* 光の蝶 */}
-                {achieveEffect === '🦋' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', left: `${5 + (item.id * 9) % 84}%`, top: `${8 + (item.id * 11) % 72}%`, animation: `butterflyFloat ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'drop-shadow(0 0 12px rgba(200,150,255,0.9))' }}>
-                    <span style={{ fontSize: 45 + item.size * 20, display: 'block', animation: `wingFlap 0.9s ${item.delay}s ease-in-out infinite` }}>🦋</span>
-                  </div>
-                ))}
+                {/* 動画背景（花火・ランタン・流星群・光の蝶） */}
+                {videoSrc && (
+                  <>
+                    <video key={videoSrc} autoPlay muted loop playsInline style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} src={videoSrc} />
+                    {/* ウォーターマーク隠し */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'rgba(0,0,0,0.85)', zIndex: 1 }} />
+                  </>
+                )}
 
                 {/* 風船 */}
                 {achieveEffect === '🎈' && achieveEffectItems.map(item => (
