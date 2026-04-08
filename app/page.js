@@ -40,9 +40,6 @@ const MOCK_PROFILE = {
 
 const MOCK_FIREWORKS = []
 
-const MOCK_CHEERS_HISTORY = []
-
-const MOCK_ACHIEVED = []
 
 const BG_PATTERNS = [
   { background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', emoji: '🌿' },
@@ -136,6 +133,9 @@ export default function FeedPage() {
   const [achieveMessages, setAchieveMessages] = useState([])
   const [reportMenuOpen, setReportMenuOpen] = useState(false)
   const [reported, setReported] = useState({})
+  const [cheersHistory, setCheersHistory] = useState([])
+  const [cheersAchieved, setCheersAchieved] = useState([])
+  const [cheersLoaded, setCheersLoaded] = useState(false)
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -383,6 +383,17 @@ export default function FeedPage() {
         uid: currentUser.uid,
         createdAt: serverTimestamp(),
       })
+      // Cheers履歴に追加
+      await setDoc(doc(db, 'users', currentUser.uid, 'posiHistory', targetPost.id), {
+        id: targetPost.id,
+        author: targetPost.author,
+        initials: targetPost.initials,
+        text: targetPost.text,
+        posiCount: targetPost.posiCount,
+        target: targetPost.target ?? 1000,
+        photo: targetPost.photo || null,
+        createdAt: serverTimestamp(),
+      })
       // 相互チェック：相手が自分の投稿にPosiしているか確認
       const myPostsSnap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50)))
       const myPosts = myPostsSnap.docs.filter(d => d.data().authorId === currentUser.uid)
@@ -482,6 +493,18 @@ export default function FeedPage() {
     sendPosi(e)
   }
 
+  const loadCheersHistory = async () => {
+    if (!currentUser || cheersLoaded) return
+    try {
+      const q = query(collection(db, 'users', currentUser.uid, 'posiHistory'), orderBy('createdAt', 'desc'), limit(100))
+      const snap = await getDocs(q)
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      setCheersHistory(all)
+      setCheersAchieved(all.filter(p => (p.posiCount ?? 0) >= (p.target ?? 1000)).slice(0, 30))
+      setCheersLoaded(true)
+    } catch (e) { console.error('cheers load error:', e) }
+  }
+
   const handleReport = async () => {
     if (!post || !currentUser || reported[post.id]) return
     setReportMenuOpen(false)
@@ -496,18 +519,18 @@ export default function FeedPage() {
   }
 
   const handleSendMsg = () => {
-    if (!post || !msgText.trim()) return
+    if (!post || !msgText.trim() || !post.authorId) return
     const text = msgText.trim()
     setMsgSent(s => ({ ...s, [post.id]: true }))
     setMsgModalOpen(false)
     setMsgText('')
-    setToast('メッセージを送りました🎆')
+    setToast('応援メッセージを送りました🎉')
     setTimeout(() => setToast(null), 2000)
     if (currentUser) {
-      addDoc(collection(db, 'messages'), {
-        postId: post.id,
-        senderId: currentUser.uid,
-        text,
+      addDoc(collection(db, 'users', post.authorId, 'messages'), {
+        message: text,
+        senderUid: currentUser.uid,
+        senderName: userProfile?.nickname || currentUser.displayName || 'だれか',
         createdAt: serverTimestamp(),
       }).catch(console.error)
     }
@@ -903,7 +926,7 @@ export default function FeedPage() {
     return (
       <button
         style={{ ...S.navTab, ...(active ? S.navTabActive : {}) }}
-        onClick={() => { setActiveTab(tab); setCheersSubView(null) }}
+        onClick={() => { setActiveTab(tab); setCheersSubView(null); if (tab === 'cheers') loadCheersHistory() }}
       >
         <Icon color={color} />
         <span style={{ ...S.navLabel, color }}>{NAV_LABELS[tab]}</span>
@@ -1095,7 +1118,10 @@ export default function FeedPage() {
               <div style={{ ...S.sectionHeader, marginTop: 4 }}>
                 <span style={S.sectionTitle}>👍 Cheersした（全件）</span>
               </div>
-              {MOCK_CHEERS_HISTORY.map(p => <HistoryCard key={p.id} p={p} />)}
+              {cheersHistory.length === 0
+                ? <div style={S.emptyState}>まだCheersした投稿がありません</div>
+                : cheersHistory.map(p => <HistoryCard key={p.id} p={p} />)
+              }
               <div style={{ height: 20 }} />
             </div>
           ) : cheersSubView === 'achieved-all' ? (
@@ -1104,11 +1130,14 @@ export default function FeedPage() {
               <div style={{ ...S.sectionHeader, marginTop: 4 }}>
                 <span style={S.sectionTitle}>🏆 達成済み（全件）</span>
               </div>
-              {MOCK_ACHIEVED.map(p => <AchievedCard key={p.id} p={p} />)}
+              {cheersAchieved.length === 0
+                ? <div style={S.emptyState}>まだ達成した投稿がありません</div>
+                : cheersAchieved.map(p => <AchievedCard key={p.id} p={p} />)
+              }
               <div style={{ height: 20 }} />
             </div>
           ) : (
-            <div style={S.profileScroll}>
+            <div style={S.profileScroll} onScroll={() => { if (!cheersLoaded) loadCheersHistory() }}>
               {/* 1. 今日の花火 */}
               <div style={S.sectionHeader}>
                 <span style={S.sectionTitle}>🎆 今日の花火</span>
@@ -1145,16 +1174,17 @@ export default function FeedPage() {
                   <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>（直近100件）</span>
                 </div>
               </div>
-              {MOCK_CHEERS_HISTORY.length === 0 ? (
-                <div style={S.emptyState}>まだCheersした投稿がありません</div>
-              ) : (
-                <>
-                  {MOCK_CHEERS_HISTORY.slice(0, 3).map(p => <HistoryCard key={p.id} p={p} />)}
-                  {MOCK_CHEERS_HISTORY.length > 3 && (
-                    <button style={S.moreBtn} onClick={() => setCheersSubView('cheers-all')}>もっと見る →</button>
-                  )}
-                </>
-              )}
+              {!cheersLoaded
+                ? <div style={S.emptyState}>読み込み中...</div>
+                : cheersHistory.length === 0
+                  ? <div style={S.emptyState}>まだCheersした投稿がありません</div>
+                  : <>
+                      {cheersHistory.slice(0, 3).map(p => <HistoryCard key={p.id} p={p} />)}
+                      {cheersHistory.length > 3 && (
+                        <button style={S.moreBtn} onClick={() => setCheersSubView('cheers-all')}>もっと見る →</button>
+                      )}
+                    </>
+              }
 
               {/* 3. 達成済み */}
               <div style={{ ...S.sectionHeader, marginTop: 20 }}>
@@ -1163,20 +1193,17 @@ export default function FeedPage() {
                   <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>あなたが応援した人の達成</div>
                 </div>
               </div>
-              {(() => {
-                const sentAuthors = new Set(posts.filter(p => sent[p.id]).map(p => p.author))
-                const achieved = MOCK_ACHIEVED.filter(p => sentAuthors.has(p.author)).slice(-30)
-                return achieved.length === 0 ? (
-                  <div style={S.emptyState}>Posiした投稿の作者が達成するとここに表示されます</div>
-                ) : (
-                  <>
-                    {achieved.slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
-                    {achieved.length > 3 && (
-                      <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
-                    )}
-                  </>
-                )
-              })()}
+              {!cheersLoaded
+                ? <div style={S.emptyState}>読み込み中...</div>
+                : cheersAchieved.length === 0
+                  ? <div style={S.emptyState}>Posiした投稿の作者が達成するとここに表示されます</div>
+                  : <>
+                      {cheersAchieved.slice(0, 3).map(p => <AchievedCard key={p.id} p={p} />)}
+                      {cheersAchieved.length > 3 && (
+                        <button style={S.moreBtn} onClick={() => setCheersSubView('achieved-all')}>もっと見る →</button>
+                      )}
+                    </>
+              }
 
               <div style={{ height: 20 }} />
             </div>
@@ -1290,13 +1317,15 @@ export default function FeedPage() {
             )}
           </div>
 
-          <button
-            style={{ ...S.msgBtn, ...(hasSentMsg ? S.msgBtnSent : {}) }}
-            disabled={hasSentMsg}
-            onClick={() => !hasSentMsg && setMsgModalOpen(true)}
-          >
-            {hasSentMsg ? '✉️ 送信済み ✓' : '✉️ 花火が上がる前だけ送れます'}
-          </button>
+          {post && post.posiCount < post.target && (
+            <button
+              style={{ ...S.msgBtn, ...(hasSentMsg ? S.msgBtnSent : {}) }}
+              disabled={hasSentMsg}
+              onClick={() => !hasSentMsg && setMsgModalOpen(true)}
+            >
+              {hasSentMsg ? '✉️ 送信済み ✓' : '✉️ 応援メッセージを送る'}
+            </button>
+          )}
         </div>
       )}
 
