@@ -4,9 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { getApp } from 'firebase/app'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, auth, getMessagingInstance } from './lib/firebase'
-import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, updateDoc, increment, orderBy, query, limit, serverTimestamp, onSnapshot, deleteDoc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
-import { setDoc, getDoc } from 'firebase/firestore'
 
 const EMOJIS = ['👍', '🎉', '🔥', '💗', '🌸', '👏', '💪', '✨', '🥹', '🎊', '🌈']
 const EMOJIS_FREE = EMOJIS.slice(0, 5)
@@ -40,8 +39,6 @@ const MOCK_PROFILE = {
 }
 
 const MOCK_FIREWORKS = []
-
-const MOCK_FRIENDS = []
 
 const MOCK_CHEERS_HISTORY = []
 
@@ -135,6 +132,7 @@ export default function FeedPage() {
   const [achieveMsgColor, setAchieveMsgColor] = useState('white')
   const [achieveMsgSize, setAchieveMsgSize] = useState('mid')
   const [achieveEffectItems, setAchieveEffectItems] = useState([])
+  const [friends, setFriends] = useState([])
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -159,30 +157,40 @@ export default function FeedPage() {
     return () => clearInterval(t)
   }, [])
 
+  const STAMINA_RECOVERY_MS = 1800000 // 30分
+
+  const calcStaminaRecovery = (stamina, lastRecoveryAt) => {
+    const lastMs = lastRecoveryAt?.toMillis ? lastRecoveryAt.toMillis() : (lastRecoveryAt?.seconds ? lastRecoveryAt.seconds * 1000 : Date.now())
+    const recovered = Math.floor((Date.now() - lastMs) / STAMINA_RECOVERY_MS)
+    if (recovered <= 0) return { stamina, lastRecoveryMs: lastMs }
+    const newStamina = Math.min(stamina + recovered, 15)
+    const newLastMs = lastMs + recovered * STAMINA_RECOVERY_MS
+    return { stamina: newStamina, lastRecoveryMs: newLastMs }
+  }
+
+  const loadStamina = async (uid) => {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid, 'stamina', 'current'))
+      if (!snap.exists()) {
+        const now = Timestamp.now()
+        await setDoc(doc(db, 'users', uid, 'stamina', 'current'), { stamina: 15, maxStamina: 15, lastRecoveryAt: now })
+        setCheerEnergy(15)
+        return
+      }
+      const { stamina, lastRecoveryAt } = snap.data()
+      const { stamina: newStamina, lastRecoveryMs } = calcStaminaRecovery(stamina, lastRecoveryAt)
+      if (newStamina !== stamina) {
+        await setDoc(doc(db, 'users', uid, 'stamina', 'current'), { stamina: newStamina, maxStamina: 15, lastRecoveryAt: Timestamp.fromMillis(lastRecoveryMs) })
+      }
+      setCheerEnergy(newStamina)
+    } catch (e) { console.error('stamina load error:', e) }
+  }
+
   useEffect(() => {
-    const RECOVERY_MS = 3600000
-    const stored = localStorage.getItem('cheerEnergy')
-    if (!stored) {
-      localStorage.setItem('cheerEnergy', JSON.stringify({ energy: 15, lastTime: Date.now() }))
-    } else {
-      let { energy, lastTime } = JSON.parse(stored)
-      const recovered = Math.floor((Date.now() - lastTime) / RECOVERY_MS)
-      if (recovered > 0) {
-        energy = Math.min(energy + recovered, 15)
-        lastTime += recovered * RECOVERY_MS
-        localStorage.setItem('cheerEnergy', JSON.stringify({ energy, lastTime }))
-      }
-      setCheerEnergy(energy)
-    }
-    const t = setInterval(() => {
-      const s = JSON.parse(localStorage.getItem('cheerEnergy') || '{}')
-      if (!s.lastTime) return
-      const recovered = Math.floor((Date.now() - s.lastTime) / RECOVERY_MS)
-      if (recovered > 0) {
-        const newEnergy = Math.min(s.energy + recovered, 15)
-        localStorage.setItem('cheerEnergy', JSON.stringify({ energy: newEnergy, lastTime: s.lastTime + recovered * RECOVERY_MS }))
-        setCheerEnergy(newEnergy)
-      }
+    const t = setInterval(async () => {
+      const user = auth.currentUser
+      if (!user) return
+      await loadStamina(user.uid)
     }, 60000)
     return () => clearInterval(t)
   }, [])
@@ -204,6 +212,13 @@ export default function FeedPage() {
     } catch (e) { console.error('FCM token error:', e) }
   }
 
+  const loadFriends = async (uid) => {
+    try {
+      const snap = await getDocs(collection(db, 'users', uid, 'friends'))
+      setFriends(snap.docs.map(d => ({ uid: d.id, ...d.data() })))
+    } catch (e) { console.error('friends load error:', e) }
+  }
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -214,9 +229,13 @@ export default function FeedPage() {
           if (snap.exists()) setUserProfile(snap.data())
         } catch (e) { console.error(e) }
         registerFcmToken(user.uid)
+        loadStamina(user.uid)
+        loadFriends(user.uid)
       } else {
         setCurrentUser(null)
         setUserProfile(null)
+        setFriends([])
+        setCheerEnergy(15)
         setAuthScreen('top')
       }
     })
@@ -302,16 +321,19 @@ export default function FeedPage() {
 
   const sendPosi = (overrideEmoji) => {
     if (!post || sent[post.id]) return
-    if (cheerEnergy <= 0) {
+    const isFriendPost = currentUser && post.authorId && friends.some(f => f.uid === post.authorId)
+    if (!isFriendPost && cheerEnergy <= 0) {
       setShaking(true)
       setTimeout(() => setShaking(false), 400)
       return
     }
-    const newEnergy = cheerEnergy - 1
-    setCheerEnergy(newEnergy)
-    const stored = JSON.parse(localStorage.getItem('cheerEnergy') || `{"energy":15,"lastTime":${Date.now()}}`)
-    stored.energy = newEnergy
-    localStorage.setItem('cheerEnergy', JSON.stringify(stored))
+    if (!isFriendPost) {
+      const newEnergy = cheerEnergy - 1
+      setCheerEnergy(newEnergy)
+      if (currentUser) {
+        setDoc(doc(db, 'users', currentUser.uid, 'stamina', 'current'), { stamina: newEnergy, maxStamina: 15 }, { merge: true }).catch(console.error)
+      }
+    }
     setPopping(true)
     setTimeout(() => setPopping(false), 380)
     const count = 3 + Math.floor(Math.random() * 3)
@@ -346,7 +368,45 @@ export default function FeedPage() {
     if (currentUser) {
       updateDoc(doc(db, 'posts', post.id), { congratsCount: increment(1) }).catch(console.error)
       sendPosiNotification(post, newCount)
+      recordPosiAndCheckFriend(post)
     }
+  }
+
+  const recordPosiAndCheckFriend = async (targetPost) => {
+    if (!targetPost.authorId || targetPost.authorId === currentUser.uid) return
+    try {
+      // posi記録
+      await setDoc(doc(db, 'posts', targetPost.id, 'posis', currentUser.uid), {
+        uid: currentUser.uid,
+        createdAt: serverTimestamp(),
+      })
+      // 相互チェック：相手が自分の投稿にPosiしているか確認
+      const myPostsSnap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(50)))
+      const myPosts = myPostsSnap.docs.filter(d => d.data().authorId === currentUser.uid)
+      let isMutual = false
+      for (const myPost of myPosts) {
+        const theirPosiSnap = await getDoc(doc(db, 'posts', myPost.id, 'posis', targetPost.authorId))
+        if (theirPosiSnap.exists()) { isMutual = true; break }
+      }
+      if (isMutual && !friends.some(f => f.uid === targetPost.authorId)) {
+        const authorSnap = await getDoc(doc(db, 'users', targetPost.authorId))
+        const authorData = authorSnap.exists() ? authorSnap.data() : {}
+        const friendData = {
+          uid: targetPost.authorId,
+          displayName: authorData.nickname || targetPost.author || 'ユーザー',
+          photoURL: authorData.photoURL || null,
+          createdAt: serverTimestamp(),
+        }
+        await setDoc(doc(db, 'users', currentUser.uid, 'friends', targetPost.authorId), friendData)
+        await setDoc(doc(db, 'users', targetPost.authorId, 'friends', currentUser.uid), {
+          uid: currentUser.uid,
+          displayName: userProfile?.nickname || currentUser.displayName || 'ユーザー',
+          photoURL: userProfile?.photoURL || null,
+          createdAt: serverTimestamp(),
+        })
+        setFriends(fs => [...fs, friendData])
+      }
+    } catch (e) { console.error('posi record error:', e) }
   }
 
   const saveNotification = async (uid, title, body) => {
@@ -849,7 +909,7 @@ export default function FeedPage() {
               <div style={S.profileHandle}>{MOCK_PROFILE.handle}</div>
               <div style={S.profileStats}>
                 <div style={S.profileStat}>
-                  <span style={S.profileStatNum}>{MOCK_PROFILE.friends}</span>
+                  <span style={S.profileStatNum}>{friends.length}</span>
                   <span style={S.profileStatLabel}>フレンド</span>
                 </div>
                 <div style={S.profileStatDivider} />
@@ -1024,14 +1084,13 @@ export default function FeedPage() {
               <span style={S.sectionTitle}>👥 フレンド</span>
               <button style={S.inviteBtn} onClick={() => setInviteModalOpen(true)}>＋ 招待</button>
             </div>
-            {MOCK_FRIENDS.length === 0 ? (
-              <div style={S.emptyState}>まだフレンドがいません　POSIし合うと繋がれます</div>
+            {friends.length === 0 ? (
+              <div style={S.emptyState}>まだフレンドがいません　Posiし合うと繋がれます</div>
             ) : (
-              MOCK_FRIENDS.map(fr => (
-                <div key={fr.id} style={S.friendRow} onClick={() => setActiveTab('profile')}>
-                  <div style={{ ...S.friendRowAvatar, background: hashColor(fr.name) }}>{fr.initials}</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{fr.name}</div>
-                  <span style={{ marginLeft: 'auto', fontSize: 18, color: 'var(--text-sub)' }}>›</span>
+              friends.map(fr => (
+                <div key={fr.uid} style={S.friendRow}>
+                  <div style={{ ...S.friendRowAvatar, background: hashColor(fr.displayName) }}>{(fr.displayName || 'U')[0]}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{fr.displayName}</div>
                 </div>
               ))
             )}
