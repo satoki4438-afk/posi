@@ -20,43 +20,70 @@ export default function DemoPage() {
 
   // 花火 Canvas
   useEffect(() => {
-    if (effect !== '🎆') {
-      cancelAnimationFrame(animRef.current)
-      return
-    }
+    if (effect !== '🎆') { cancelAnimationFrame(animRef.current); return }
     const canvas = canvasRef.current
     if (!canvas) return
     canvas.width = canvas.offsetWidth
     canvas.height = canvas.offsetHeight
     const ctx = canvas.getContext('2d')
-    const particles = []
-    const rockets = []
-    const COLORS = ['#ff6b35','#f5a623','#fff','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b']
+    const particles = [], rockets = [], flashes = [], pending = []
+    const COLORS = ['#ff6b35','#f5a623','#fff','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b','#00bcd4','#ff4488']
+
     const explode = (x, y) => {
-      for (let i = 0; i < 80; i++) {
-        const a = (Math.PI * 2 * i) / 80
-        const s = 2 + Math.random() * 5
-        particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, color: COLORS[i%COLORS.length], life: 1, decay: 0.012 + Math.random()*0.015, size: 2 + Math.random()*2 })
+      flashes.push({ x, y, life: 1 })
+      const isSingle = Math.random() < 0.5
+      const c1 = COLORS[Math.floor(Math.random() * COLORS.length)]
+      let c2 = COLORS[Math.floor(Math.random() * COLORS.length)]
+      while (c2 === c1) c2 = COLORS[Math.floor(Math.random() * COLORS.length)]
+      const colorFn = (s) => isSingle ? c1 : (s < 7 ? c1 : c2)
+      const count = 120 + Math.floor(Math.random() * 31)
+      for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count + (Math.random()-0.5)*(Math.PI/12)
+        const s = 3 + Math.random() * 9
+        const isTail = Math.random() < 0.35
+        const decay = (isTail ? 0.006+Math.random()*0.008 : 0.014+Math.random()*0.012) + (s > 7 ? 0.005 : 0)
+        particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, color: colorFn(s), life: 1, decay, size: isTail ? 1.5+Math.random() : 2+Math.random()*2.5, isTail })
       }
     }
-    const launch = () => rockets.push({ x: canvas.width*(0.2+Math.random()*0.6), y: canvas.height, vy: -(9+Math.random()*5), targetY: canvas.height*(0.1+Math.random()*0.35), trail: [] })
-    let frame = 0
+
+    let frame = 0, nextLaunch = 0
+    const launch = () => {
+      const count = 2 + Math.floor(Math.random() * 2)
+      for (let i = 0; i < count; i++) {
+        pending.push({ spawnAt: frame + i*12, rocket: { x: canvas.width*(0.15+Math.random()*0.7), y: canvas.height, vy: -(9+Math.random()*5), vx: (Math.random()-0.5)*1.5, targetY: canvas.height*(0.08+Math.random()*0.3), trail: [] } })
+      }
+      nextLaunch = frame + 20 + Math.floor(Math.random()*21)
+    }
+
     const tick = () => {
-      ctx.fillStyle = 'rgba(0,0,0,0.18)'
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      if (++frame % 45 === 0) launch()
-      rockets.forEach((r, ri) => {
-        r.trail.push({ x: r.x, y: r.y })
-        if (r.trail.length > 12) r.trail.shift()
-        r.y += r.vy
-        r.trail.forEach((t, ti) => { ctx.beginPath(); ctx.arc(t.x,t.y,2,0,Math.PI*2); ctx.fillStyle=`rgba(255,200,100,${ti/r.trail.length})`; ctx.fill() })
-        if (r.y <= r.targetY) { explode(r.x, r.y); rockets.splice(ri, 1) }
-      })
+      for (let i = flashes.length-1; i >= 0; i--) {
+        const f = flashes[i]; f.life -= 0.12
+        if (f.life <= 0) { flashes.splice(i,1); continue }
+        const g = ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,60*f.life)
+        g.addColorStop(0,`rgba(255,255,255,${f.life*0.9})`); g.addColorStop(1,'rgba(255,255,255,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x,f.y,60*f.life,0,Math.PI*2); ctx.fill()
+      }
+      for (let i = pending.length-1; i >= 0; i--) {
+        if (frame >= pending[i].spawnAt) { rockets.push(pending[i].rocket); pending.splice(i,1) }
+      }
+      if (frame >= nextLaunch) launch()
+      frame++
+      for (let i = rockets.length-1; i >= 0; i--) {
+        const r = rockets[i]; r.vx += (Math.random()-0.5)*0.3
+        r.trail.push({x:r.x,y:r.y}); if (r.trail.length>12) r.trail.shift()
+        r.x += r.vx; r.y += r.vy
+        r.trail.forEach((t,ti) => { ctx.beginPath(); ctx.arc(t.x,t.y,2,0,Math.PI*2); ctx.fillStyle=`rgba(255,200,100,${ti/r.trail.length})`; ctx.fill() })
+        if (r.y <= r.targetY) { explode(r.x,r.y); rockets.splice(i,1) }
+      }
       for (let i = particles.length-1; i >= 0; i--) {
-        const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=p.decay
-        if (p.life <= 0) { particles.splice(i, 1); continue }
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2)
-        ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1
+        const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.vx*=0.98; p.life-=p.decay
+        if (p.life <= 0) { particles.splice(i,1); continue }
+        ctx.globalAlpha = p.life
+        if (p.isTail) { ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-p.vx*3,p.y-p.vy*3); ctx.strokeStyle=p.color; ctx.lineWidth=p.size*p.life; ctx.stroke() }
+        else { ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill() }
+        ctx.globalAlpha = 1
       }
       animRef.current = requestAnimationFrame(tick)
     }
