@@ -133,6 +133,7 @@ export default function FeedPage() {
   const [achieveMsgSize, setAchieveMsgSize] = useState('mid')
   const [achieveEffectItems, setAchieveEffectItems] = useState([])
   const [friends, setFriends] = useState([])
+  const [achieveMessages, setAchieveMessages] = useState([])
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -556,6 +557,28 @@ export default function FeedPage() {
     setAchieveEffectItems(items)
     return () => setAchieveEffectItems([])
   }, [achieveModal, achieveStep, achieveEffect])
+
+  useEffect(() => {
+    if (!achieveModal) { setAchieveMessages([]); return }
+    const authorId = achieveModal.post?.authorId
+    if (!authorId) {
+      setAchieveMessages([{ id: 'default', text: 'みんなありがとう！🎉', own: false }])
+      return
+    }
+    getDocs(collection(db, 'users', authorId, 'messages')).then(snap => {
+      if (snap.empty) {
+        setAchieveMessages([{ id: 'default', text: 'みんなありがとう！🎉', own: false }])
+      } else {
+        setAchieveMessages(snap.docs.map(d => ({
+          id: d.id,
+          text: d.data().text || '',
+          own: d.data().senderId === currentUser?.uid,
+        })))
+      }
+    }).catch(() => {
+      setAchieveMessages([{ id: 'default', text: 'みんなありがとう！🎉', own: false }])
+    })
+  }, [achieveModal])
 
   const AUTH_ERRORS = {
     'auth/email-already-in-use': 'このメールアドレスはすでに登録されています',
@@ -1470,6 +1493,7 @@ export default function FeedPage() {
             }
             @keyframes wingFlap { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.3)} }
             @keyframes scrollAchieve { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+            @keyframes achMsgBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
           `}</style>
 
           {/* STEP 1: 演出選択 */}
@@ -1548,13 +1572,6 @@ export default function FeedPage() {
             const msgColorMap = { white: '#fff', orange: '#f5601e', gold: '#ffd700' }
             const msgSizeMap = { large: 22, mid: 16, small: 12 }
             const msgPosStyle = { top: { top: '12%' }, mid: { top: '45%', transform: 'translateY(-50%)' }, bot: { bottom: '22%' } }
-            const demoMsgs = [
-              { id: 1, text: 'おめでとう！', own: false },
-              { id: 2, text: 'すごい！', own: false },
-              { id: 3, text: 'ずっと応援してたよ', own: true },
-              { id: 4, text: '感動した🥹', own: false },
-              { id: 5, text: '夢が叶ったね✨', own: false },
-            ]
             return (
               <div style={{ position: 'absolute', inset: 0, background: bgMap[achieveEffect], overflow: 'hidden' }}>
                 <button onClick={() => setAchieveModal(null)} style={S.lightboxClose}>×</button>
@@ -1585,7 +1602,7 @@ export default function FeedPage() {
                 ))}
 
                 {/* 流れるメッセージ */}
-                {demoMsgs.map((msg, i) => (
+                {achieveMessages.map((msg, i) => (
                   <div key={msg.id} style={{ position: 'absolute', top: `${14 + i * 13}%`, fontSize: 15, fontWeight: 700, color: msg.own ? '#f5601e' : '#fff', opacity: msg.own ? 1 : 0.85, whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.8)', animation: `scrollAchieve ${7 + i * 1.5}s ${i * 1.2}s linear infinite`, zIndex: 10, pointerEvents: 'none', ...(msg.own ? { animationName: 'scrollAchieve, achMsgBlink' } : {}) }}>
                     {msg.text}
                   </div>
