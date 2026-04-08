@@ -300,7 +300,7 @@ export default function FeedPage() {
     }
   }
 
-  const sendPosi = () => {
+  const sendPosi = (overrideEmoji) => {
     if (!post || sent[post.id]) return
     if (cheerEnergy <= 0) {
       setShaking(true)
@@ -317,7 +317,7 @@ export default function FeedPage() {
     const count = 3 + Math.floor(Math.random() * 3)
     const particles = Array.from({ length: count }, (_, i) => ({
       id: Date.now() + i,
-      e: emoji,
+      e: overrideEmoji || emoji,
       left: 15 + Math.random() * 70,
       dur: 0.65 + Math.random() * 0.3,
       delay: Math.random() * 0.15,
@@ -416,7 +416,7 @@ export default function FeedPage() {
   const pickEmoji = (e) => {
     setEmoji(e)
     setPickerOpen(false)
-    sendPosi()
+    sendPosi(e)
   }
 
   const handleSendMsg = () => {
