@@ -509,7 +509,7 @@ export default function FeedPage() {
     const rockets = []
     const flashes = []
     const pending = [] // { spawnAt, rocket }
-    const COLORS = ['#ff6b35','#f5a623','#fff','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b','#00bcd4','#ff4488']
+    const COLORS = ['#ffb7c5','#c8b4e3','#a8d8ea','#ffd700','#b5ead7','#ffc8dd','#e2b4e3','#c3e8ff','#ffe4b5','#d4f0d4']
 
     const explode = (x, y) => {
       flashes.push({ x, y, life: 1 })
@@ -517,14 +517,14 @@ export default function FeedPage() {
       const c1 = COLORS[Math.floor(Math.random() * COLORS.length)]
       let c2 = COLORS[Math.floor(Math.random() * COLORS.length)]
       while (c2 === c1) c2 = COLORS[Math.floor(Math.random() * COLORS.length)]
-      const colorFn = (s) => isSingle ? c1 : (s < 7 ? c1 : c2)
+      const colorFn = (s) => isSingle ? c1 : (s < 5 ? c1 : c2)
       const count = 120 + Math.floor(Math.random() * 31)
       for (let i = 0; i < count; i++) {
         const baseAngle = (Math.PI * 2 * i) / count
         const a = baseAngle + (Math.random() - 0.5) * (Math.PI / 12)
-        const s = 3 + Math.random() * 9
-        const isTail = Math.random() < 0.35
-        const decay = (isTail ? 0.006 + Math.random() * 0.008 : 0.014 + Math.random() * 0.012) + (s > 7 ? 0.005 : 0)
+        const s = 2 + Math.random() * 6
+        const isTail = Math.random() < 0.4
+        const decay = isTail ? 0.005 + Math.random() * 0.006 : 0.009 + Math.random() * 0.008
         particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, color: colorFn(s), life: 1, decay, size: isTail ? 1.5 + Math.random() : 2 + Math.random()*2.5, isTail })
       }
     }
@@ -537,23 +537,23 @@ export default function FeedPage() {
       for (let i = 0; i < count; i++) {
         pending.push({
           spawnAt: frame + i * 12,
-          rocket: { x: canvas.width*(0.15+Math.random()*0.7), y: canvas.height, vy: -(9+Math.random()*5), vx: (Math.random()-0.5)*1.5, targetY: canvas.height*(0.08+Math.random()*0.3), trail: [] },
+          rocket: { x: canvas.width*(0.15+Math.random()*0.7), y: canvas.height, vy: -(6+Math.random()*4), vx: (Math.random()-0.5)*1.0, targetY: canvas.height*(0.1+Math.random()*0.32), trail: [] },
         })
       }
       nextLaunch = frame + 20 + Math.floor(Math.random() * 21)
     }
 
     const tick = () => {
-      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // フラッシュ
       for (let i = flashes.length-1; i >= 0; i--) {
-        const f = flashes[i]; f.life -= 0.12
+        const f = flashes[i]; f.life -= 0.08
         if (f.life <= 0) { flashes.splice(i, 1); continue }
-        const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 60*f.life)
-        g.addColorStop(0, `rgba(255,255,255,${f.life*0.9})`); g.addColorStop(1, 'rgba(255,255,255,0)')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, 60*f.life, 0, Math.PI*2); ctx.fill()
+        const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 90*f.life)
+        g.addColorStop(0, `rgba(255,240,255,${f.life*0.75})`); g.addColorStop(0.4, `rgba(200,180,255,${f.life*0.35})`); g.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, 90*f.life, 0, Math.PI*2); ctx.fill()
       }
 
       // pending → rockets
@@ -577,7 +577,7 @@ export default function FeedPage() {
 
       // パーティクル
       for (let i = particles.length-1; i >= 0; i--) {
-        const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.vx*=0.98; p.life-=p.decay
+        const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.03; p.vx*=0.99; p.life-=p.decay
         if (p.life <= 0) { particles.splice(i, 1); continue }
         ctx.globalAlpha = p.life
         if (p.isTail) {
@@ -599,15 +599,16 @@ export default function FeedPage() {
     if (!achieveModal || achieveStep !== 3) return
     const effect = achieveEffect
     if (effect === '🎆') return
-    const count = effect === '🎈' ? 12 : effect === '🏮' ? 8 : effect === '☄️' ? 16 : 10
+    const count = effect === '🎈' ? 10 : effect === '🏮' ? 9 : effect === '☄️' ? 14 : 10
+    const BALLOON_HUES = [0, 55, 165, 220, 105]
     const items = Array.from({ length: count }, (_, i) => ({
       id: i,
-      left: 5 + Math.random() * 90,
-      dur: 4 + Math.random() * 5,
-      delay: Math.random() * 3,
-      size: 0.7 + Math.random() * 0.8,
-      sway: (Math.random() - 0.5) * 60,
-      color: ['#ff6b35','#f5a623','#4caf50','#2196f3','#e91e63','#9c27b0','#ffeb3b','#00bcd4'][i % 8],
+      left: 5 + Math.random() * 88,
+      dur: (effect === '🏮' || effect === '🎈') ? 9+Math.random()*6 : effect === '☄️' ? 4+Math.random()*3 : 7+Math.random()*5,
+      delay: Math.random() * 5,
+      size: 0.5 + Math.random() * 0.7,
+      sway: (Math.random() - 0.5) * 90,
+      hue: BALLOON_HUES[i % 5],
     }))
     setAchieveEffectItems(items)
     return () => setAchieveEffectItems([])
@@ -1540,13 +1541,11 @@ export default function FeedPage() {
       {achieveModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 500, maxWidth: 480, margin: '0 auto' }}>
           <style>{`
-            @keyframes lanternRise { 0%{transform:translateY(0) translateX(0) rotate(-3deg);opacity:0} 10%{opacity:1} 50%{transform:translateY(-50vh) translateX(var(--sw)) rotate(3deg)} 100%{transform:translateY(-110vh) translateX(0) rotate(-3deg);opacity:0} }
-            @keyframes meteorFall { 0%{transform:translate(0,0);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translate(-120vw,120vh);opacity:0} }
-            @keyframes balloonRise { 0%{transform:translateY(0) translateX(0);opacity:0} 10%{opacity:1} 50%{transform:translateY(-50vh) translateX(var(--sw))} 100%{transform:translateY(-110vh) translateX(0);opacity:0} }
-            @keyframes butterflyFloat {
-              0%{transform:translate(0,0) rotate(0deg)} 25%{transform:translate(60px,-40px) rotate(15deg)} 50%{transform:translate(120px,20px) rotate(-10deg)} 75%{transform:translate(60px,60px) rotate(20deg)} 100%{transform:translate(0,0) rotate(0deg)}
-            }
-            @keyframes wingFlap { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.3)} }
+            @keyframes lanternRise { 0%{transform:translateY(0) translateX(0) rotate(-5deg);opacity:0} 8%{opacity:1} 40%{transform:translateY(-38vh) translateX(var(--sw)) rotate(5deg)} 75%{transform:translateY(-78vh) translateX(0) rotate(-3deg)} 100%{transform:translateY(-115vh) translateX(calc(var(--sw)*0.5)) rotate(-5deg);opacity:0} }
+            @keyframes meteorFall { 0%{opacity:0;transform:rotate(35deg) translateX(0)} 8%{opacity:1} 88%{opacity:0.85} 100%{opacity:0;transform:rotate(35deg) translateX(-130vw)} }
+            @keyframes balloonRise { 0%{transform:translateY(0) translateX(0);opacity:0} 8%{opacity:1} 40%{transform:translateY(-38vh) translateX(var(--sw))} 72%{transform:translateY(-76vh) translateX(0)} 100%{transform:translateY(-115vh) translateX(calc(var(--sw)*0.6));opacity:0} }
+            @keyframes butterflyFloat { 0%{transform:translate(0,0) rotate(0deg) scale(1)} 20%{transform:translate(50px,-70px) rotate(8deg) scale(1.05)} 45%{transform:translate(100px,15px) rotate(-5deg) scale(0.96)} 70%{transform:translate(30px,75px) rotate(9deg) scale(1.04)} 85%{transform:translate(-25px,40px) rotate(-3deg) scale(1)} 100%{transform:translate(0,0) rotate(0deg) scale(1)} }
+            @keyframes wingFlap { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.15)} }
             @keyframes scrollAchieve { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
             @keyframes achMsgBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
           `}</style>
@@ -1636,24 +1635,24 @@ export default function FeedPage() {
 
                 {/* ランタン */}
                 {achieveEffect === '🏮' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -60, fontSize: 36 * item.size, animation: `lanternRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px`, filter: 'drop-shadow(0 0 12px rgba(255,140,0,0.8))' }}>🏮</div>
+                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -80, fontSize: 50 + item.size * 20, animation: `lanternRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px`, filter: 'drop-shadow(0 0 18px rgba(255,160,0,0.95)) drop-shadow(0 0 40px rgba(255,100,0,0.45))' }}>🏮</div>
                 ))}
 
                 {/* 流星群 */}
                 {achieveEffect === '☄️' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', right: `${item.left}%`, top: `${10 + (item.id * 6) % 40}%`, width: 2 + item.size * 2, height: 80 + item.size * 40, background: `linear-gradient(135deg, #fff, transparent)`, borderRadius: 99, animation: `meteorFall ${item.dur}s ${item.delay}s linear infinite`, transform: 'rotate(35deg)' }} />
+                  <div key={item.id} style={{ position: 'absolute', right: `${item.left}%`, top: `${5 + (item.id * 7) % 45}%`, width: 3 + item.size * 4, height: 90 + item.size * 60, background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(200,230,255,0.7), transparent)', borderRadius: 99, animation: `meteorFall ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'blur(0.5px)' }} />
                 ))}
 
                 {/* 光の蝶 */}
                 {achieveEffect === '🦋' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', left: `${10 + (item.id * 8) % 80}%`, top: `${15 + (item.id * 7) % 65}%`, animation: `butterflyFloat ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'drop-shadow(0 0 8px rgba(200,150,255,0.9))' }}>
-                    <span style={{ fontSize: 28 * item.size, display: 'block', animation: `wingFlap 0.4s ${item.delay}s linear infinite` }}>🦋</span>
+                  <div key={item.id} style={{ position: 'absolute', left: `${5 + (item.id * 9) % 84}%`, top: `${8 + (item.id * 11) % 72}%`, animation: `butterflyFloat ${item.dur}s ${item.delay}s ease-in-out infinite`, filter: 'drop-shadow(0 0 12px rgba(200,150,255,0.9))' }}>
+                    <span style={{ fontSize: 45 + item.size * 20, display: 'block', animation: `wingFlap 0.9s ${item.delay}s ease-in-out infinite` }}>🦋</span>
                   </div>
                 ))}
 
                 {/* 風船 */}
                 {achieveEffect === '🎈' && achieveEffectItems.map(item => (
-                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -60, fontSize: 32 * item.size, animation: `balloonRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px` }}>🎈</div>
+                  <div key={item.id} style={{ position: 'absolute', left: `${item.left}%`, bottom: -70, fontSize: 50 + item.size * 20, animation: `balloonRise ${item.dur}s ${item.delay}s ease-in-out infinite`, '--sw': `${item.sway}px`, filter: `hue-rotate(${item.hue}deg) brightness(1.1) saturate(0.85)` }}>🎈</div>
                 ))}
 
                 {/* 流れるメッセージ */}
