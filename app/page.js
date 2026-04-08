@@ -981,6 +981,16 @@ export default function FeedPage() {
               </div>
             </div>
 
+            <div style={{ ...S.sectionHeader, marginTop: 8 }}>
+              <span style={S.sectionTitle}>📄 法的情報</span>
+            </div>
+            {[['プライバシーポリシー', '/privacy'], ['利用規約', '/terms']].map(([label, href]) => (
+              <a key={href} href={href} style={{ ...S.settingRow, textDecoration: 'none', display: 'flex', marginBottom: 8 }}>
+                <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>{label}</span>
+                <span style={{ color: 'var(--text-sub)', fontSize: 18 }}>›</span>
+              </a>
+            ))}
+
             <div style={{ height: 20 }} />
           </div>
 
