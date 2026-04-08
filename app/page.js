@@ -1738,11 +1738,7 @@ export default function FeedPage() {
           <style>{`
             @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
             @keyframes swipeHint { 0%{transform:translateX(0);opacity:0} 20%{opacity:1} 80%{opacity:1} 100%{transform:translateX(60px);opacity:0} }
-            @keyframes fireworkBurst {
-              0%{transform:scale(0);opacity:1} 60%{transform:scale(1.2);opacity:1} 100%{transform:scale(1);opacity:0.8}
-            }
           `}</style>
-          <button style={S.onboardSkip} onClick={finishOnboarding}>スキップ</button>
 
           {onboardIdx === 0 && (
             <div style={S.onboardSlide}>
@@ -1780,32 +1776,13 @@ export default function FeedPage() {
             </div>
           )}
 
-          {onboardIdx === 2 && (
-            <div style={S.onboardSlide}>
-              <div style={{ width: 140, height: 140, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 80, animation: 'fireworkBurst 1.5s ease-out infinite' }}>{selectedEffect}</div>
-              </div>
-              <div style={S.onboardTitle}>みんなのPosiを集めて{'\n'}お祝いしよう</div>
-              <div style={S.onboardSub}>1000Posiが集まったらお祝い演出！{'\n'}演出を選んでください</div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {['🎆','🏮','🦋','🎈','☄️'].map(e => (
-                  <button
-                    key={e}
-                    style={{ fontSize: 32, background: selectedEffect === e ? 'var(--orange-tint)' : 'var(--card-bg)', border: selectedEffect === e ? '2px solid var(--orange)' : '2px solid var(--card-border)', borderRadius: 12, padding: '8px 12px', cursor: 'pointer' }}
-                    onClick={() => setSelectedEffect(e)}
-                  >{e}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div style={S.onboardDots}>
-            {[0,1,2].map(i => (
+            {[0,1].map(i => (
               <div key={i} style={{ ...S.onboardDot, ...(onboardIdx === i ? S.onboardDotActive : {}) }} onClick={() => setOnboardIdx(i)} />
             ))}
           </div>
 
-          {onboardIdx < 2 ? (
+          {onboardIdx < 1 ? (
             <button style={S.onboardNext} onClick={() => setOnboardIdx(i => i + 1)}>次へ</button>
           ) : (
             <button style={S.onboardNext} onClick={finishOnboarding}>はじめる！</button>
