@@ -703,6 +703,24 @@ export default function FeedPage() {
     try {
       let photoUrl = null
       if (postPhotoFile) {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result.split(',')[1])
+          reader.onerror = reject
+          reader.readAsDataURL(postPhotoFile)
+        })
+        const modRes = await fetch('/api/moderate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mimeType: postPhotoFile.type }),
+        })
+        const { blocked } = await modRes.json()
+        if (blocked) {
+          setToast('この写真は投稿できません。別の写真を選んでください。')
+          setTimeout(() => setToast(null), 3000)
+          setPostSubmitting(false)
+          return
+        }
         const storage = getStorage(getApp())
         const fileRef = storageRef(storage, `posts/${Date.now()}_${postPhotoFile.name}`)
         await uploadBytes(fileRef, postPhotoFile)
