@@ -134,6 +134,8 @@ export default function FeedPage() {
   const [achieveEffectItems, setAchieveEffectItems] = useState([])
   const [friends, setFriends] = useState([])
   const [achieveMessages, setAchieveMessages] = useState([])
+  const [reportMenuOpen, setReportMenuOpen] = useState(false)
+  const [reported, setReported] = useState({})
 
   const longRef = useRef(null)
   const didDragRef = useRef(false)
@@ -480,6 +482,19 @@ export default function FeedPage() {
     sendPosi(e)
   }
 
+  const handleReport = async () => {
+    if (!post || !currentUser || reported[post.id]) return
+    setReportMenuOpen(false)
+    await addDoc(collection(db, 'reports'), {
+      postId: post.id,
+      reporterUid: currentUser.uid,
+      createdAt: serverTimestamp(),
+    }).catch(console.error)
+    setReported(r => ({ ...r, [post.id]: true }))
+    setToast('通報しました')
+    setTimeout(() => setToast(null), 2000)
+  }
+
   const handleSendMsg = () => {
     if (!post || !msgText.trim()) return
     const text = msgText.trim()
@@ -782,24 +797,6 @@ export default function FeedPage() {
     try {
       let photoUrl = null
       if (postPhotoFile) {
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result.split(',')[1])
-          reader.onerror = reject
-          reader.readAsDataURL(postPhotoFile)
-        })
-        const modRes = await fetch('/api/moderate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64, mimeType: postPhotoFile.type }),
-        })
-        const { blocked } = await modRes.json()
-        if (blocked) {
-          setToast('この写真は投稿できません。別の写真を選んでください。')
-          setTimeout(() => setToast(null), 3000)
-          setPostSubmitting(false)
-          return
-        }
         const storage = getStorage(getApp())
         const fileRef = storageRef(storage, `posts/${Date.now()}_${postPhotoFile.name}`)
         await uploadBytes(fileRef, postPhotoFile)
@@ -1213,8 +1210,8 @@ export default function FeedPage() {
           <div
             className={isWobbling ? 'card-wobble' : ''}
             style={{ ...S.screen, top: 130 + (hasSoonBanner ? BANNER_H : 0), ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
-            onMouseDown={e => { setWobble(false); dragStart(e.clientX) }}
-            onTouchStart={e => { setWobble(false); dragStart(e.touches[0].clientX) }}
+            onMouseDown={e => { setWobble(false); setReportMenuOpen(false); dragStart(e.clientX) }}
+            onTouchStart={e => { setWobble(false); setReportMenuOpen(false); dragStart(e.touches[0].clientX) }}
           >
             {floatingEmojis.map(fe => (
               <div key={fe.id} className="emoji-fly" style={{ ...S.floatingEmoji, left: `${fe.left}%`, '--dur': `${fe.dur}s`, '--delay': `${fe.delay}s`, '--tx': `${fe.tx}px`, '--rot': `${fe.rot}deg` }}>{fe.e}</div>
@@ -1233,6 +1230,22 @@ export default function FeedPage() {
                 )}
                 <div style={S.textArea}>
                   <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+                </div>
+                {/* ・・・メニュー */}
+                <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 5 }} onClick={e => e.stopPropagation()}>
+                  <button
+                    style={{ background: 'rgba(0,0,0,0.25)', border: 'none', borderRadius: 99, padding: '4px 10px', fontSize: 16, color: '#fff', cursor: 'pointer', lineHeight: 1 }}
+                    onClick={() => setReportMenuOpen(v => !v)}
+                  >・・・</button>
+                  {reportMenuOpen && (
+                    <div style={{ position: 'absolute', top: 32, right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 120 }}>
+                      <button
+                        style={{ display: 'block', width: '100%', padding: '12px 16px', fontSize: 14, fontWeight: 600, color: reported[post.id] ? '#aaa' : '#e53935', background: 'none', border: 'none', cursor: reported[post.id] ? 'default' : 'pointer', textAlign: 'left' }}
+                        onClick={handleReport}
+                        disabled={reported[post.id]}
+                      >{reported[post.id] ? '通報済み' : '通報する'}</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1947,7 +1960,7 @@ const S = {
   authorName: { fontSize: 17, fontWeight: 700, color: 'var(--text)' },
   authorTime: { fontSize: 13, color: 'var(--text-sub)', marginTop: 1 },
 
-  mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)' },
+  mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)', position: 'relative' },
   photoArea: { overflow: 'hidden', maxHeight: '45vh' },
   photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   photo: { width: '100%', height: '100%', maxHeight: '45vh', objectFit: 'cover', display: 'block' },
