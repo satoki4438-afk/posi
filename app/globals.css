@@ -1,17 +1,21 @@
 :root {
-  --orange: #FF6B35;
-  --orange-dark: #D94F1A;
-  --orange-tint: #fff3ee;
-  --orange-border: #ffd0bb;
-  --primary: #7C5CBF;
-  --primary-light: #9B7DD4;
-  --primary-tint: #f0eaff;
-  --bg: #F5F5F0;
-  --bg-posi: #fff3ee;
-  --card-bg: #ffffff;
-  --card-border: rgba(0, 0, 0, 0.08);
-  --text: #1a1a2e;
-  --text-sub: #6b6b80;
+  --bg: #0B1020;
+  --card-bg: #121A33;
+  --card-border: rgba(255,255,255,0.08);
+  --text: #ffffff;
+  --text-sub: rgba(255,255,255,0.7);
+  --text-muted: rgba(255,255,255,0.4);
+  --pink: #FF5DAA;
+  --gold: #FFC857;
+  --purple: #8A7DFF;
+  --mint: #6EF3D6;
+  --orange: #FF5DAA;
+  --orange-dark: #e04090;
+  --orange-tint: rgba(255,93,170,0.12);
+  --orange-border: rgba(255,93,170,0.3);
+  --primary: #8A7DFF;
+  --primary-light: #a89aff;
+  --primary-tint: rgba(138,125,255,0.12);
 }
 
 @keyframes posiPop {
@@ -82,7 +86,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-tap-highlight-color: transparent;

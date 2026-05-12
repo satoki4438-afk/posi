@@ -1012,7 +1012,7 @@ export default function FeedPage() {
 
   const navTab = (tab, Icon) => {
     const active = activeTab === tab
-    const color = active ? 'var(--orange)' : '#aaa'
+    const color = active ? '#FF5DAA' : 'rgba(255,255,255,0.4)'
     return (
       <button
         style={{ ...S.navTab, ...(active ? S.navTabActive : {}) }}
@@ -1087,16 +1087,6 @@ export default function FeedPage() {
       {isFeed && hasSoonBanner && (
         <div style={S.soonBanner} onClick={jumpToSoon}>
           <span style={{ animation: 'soonBlink 1.4s ease-in-out infinite' }}>もうすぐ！→</span>
-        </div>
-      )}
-
-      {isFeed && post && (
-        <div style={{ ...S.authorFixed, top: 60 + (hasSoonBanner ? BANNER_H : 0) }}>
-          <div style={S.avatar}>{post.initials}</div>
-          <div>
-            <div style={S.authorName}>{post.author}</div>
-            <div style={S.authorTime}>{post.time}</div>
-          </div>
         </div>
       )}
 
@@ -1326,7 +1316,7 @@ export default function FeedPage() {
         ) : (
           <div
             className={isWobbling ? 'card-wobble' : ''}
-            style={{ ...S.screen, top: 130 + (hasSoonBanner ? BANNER_H : 0), ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
+            style={{ ...S.screen, top: 60 + (hasSoonBanner ? BANNER_H : 0), ...(isWobbling ? {} : { transform: cardTransform, transition: cardTransition }) }}
             onMouseDown={e => { setWobble(false); setReportMenuOpen(false); dragStart(e.clientX) }}
             onTouchStart={e => { setWobble(false); setReportMenuOpen(false); dragStart(e.touches[0].clientX) }}
           >
@@ -1336,28 +1326,73 @@ export default function FeedPage() {
 
             <div style={S.centerWrap}>
               <div style={S.mainCard}>
+                {/* 背景 */}
                 {post.photo ? (
-                  <div style={S.photoArea} onClick={e => { e.stopPropagation(); setLightbox(post.photo) }}>
-                    <img src={post.photo} alt="" style={S.photo} draggable={false} />
-                  </div>
+                  <img src={post.photo} alt="" style={S.cardBgPhoto} draggable={false} onClick={e => { e.stopPropagation(); setLightbox(post.photo) }} />
                 ) : (
-                  <div style={{ ...S.photoAreaNoPhoto, background: getPattern(post.id).background }}>
-                    <span style={{ fontSize: 48 }}>{getPattern(post.id).emoji}</span>
+                  <div style={S.cardBgNoPhoto}>
+                    <span style={S.cardBgEmoji}>{getPattern(post.id).emoji}</span>
                   </div>
                 )}
-                <div style={S.textArea}>
-                  <p style={{ ...S.postText, fontSize: post.text.length <= 10 ? '2rem' : post.text.length <= 30 ? '1.5rem' : '1.1rem' }}>{post.text}</p>
+                {/* グラデーションオーバーレイ */}
+                <div style={S.cardOverlay} />
+                {/* コンテンツ */}
+                <div style={S.cardContent}>
+                  {/* ユーザー行 */}
+                  <div style={S.cardUserRow}>
+                    <div style={S.cardAvatar}>{post.initials}</div>
+                    <span style={S.cardAuthorName}>@{post.author}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>{post.time}</span>
+                  </div>
+                  {/* 投稿テキスト */}
+                  <p style={{ ...S.cardPostText, fontSize: post.text.length <= 10 ? '1.8rem' : post.text.length <= 30 ? '1.35rem' : '1.05rem' }}>{post.text}</p>
+                  {/* プログレスバー */}
+                  <div style={S.cardProgressWrap}>
+                    <div style={S.cardBar}>
+                      <div style={{ ...S.cardBarFill, width: `${progress}%` }} />
+                    </div>
+                    <span className={remaining <= 50 ? 'indicator-blink' : ''} style={S.cardProgressLabel}>
+                      {remaining <= 10 ? `🎆 もうすぐ花火！あと${remaining.toLocaleString()}` : `あと${remaining.toLocaleString()} Posi`}
+                    </span>
+                  </div>
+                  {/* 下部行: 応援人数 + POSIボタン */}
+                  <div style={S.cardBottomRow}>
+                    <div style={S.cardPosiersLeft}>
+                      <span style={S.cardPosiCount}>👍 {post.posiCount.toLocaleString()}人が応援</span>
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        className={popping ? 'posi-pop' : shaking ? 'posi-shake' : ''}
+                        style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : cheerEnergy <= 0 ? S.posiBtnNoEnergy : {}) }}
+                        onMouseDown={posiDown}
+                        onMouseUp={posiUp}
+                        onTouchStart={posiDown}
+                        onTouchEnd={posiUp}
+                      >
+                        <span style={{ fontSize: 20 }}>👍</span>
+                        <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', letterSpacing: '0.5px' }}>POSI!</span>
+                        <span style={{ fontSize: 9, opacity: 0.8, fontWeight: 600, color: '#fff' }}>{post.posiCount.toLocaleString()}</span>
+                      </button>
+                      {pickerOpen && (
+                        <div style={S.picker}>
+                          {emojis.map(e => (
+                            <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {/* ・・・メニュー */}
                 <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 5 }} onClick={e => e.stopPropagation()}>
                   <button
-                    style={{ background: 'rgba(0,0,0,0.25)', border: 'none', borderRadius: 99, padding: '4px 10px', fontSize: 16, color: '#fff', cursor: 'pointer', lineHeight: 1 }}
+                    style={{ background: 'rgba(0,0,0,0.35)', border: 'none', borderRadius: 99, padding: '4px 10px', fontSize: 16, color: '#fff', cursor: 'pointer', lineHeight: 1 }}
                     onClick={() => setReportMenuOpen(v => !v)}
                   >・・・</button>
                   {reportMenuOpen && (
-                    <div style={{ position: 'absolute', top: 32, right: 0, background: '#fff', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 120 }}>
+                    <div style={{ position: 'absolute', top: 32, right: 0, background: '#121A33', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', overflow: 'hidden', minWidth: 120 }}>
                       <button
-                        style={{ display: 'block', width: '100%', padding: '12px 16px', fontSize: 14, fontWeight: 600, color: reported[post.id] ? '#aaa' : '#e53935', background: 'none', border: 'none', cursor: reported[post.id] ? 'default' : 'pointer', textAlign: 'left' }}
+                        style={{ display: 'block', width: '100%', padding: '12px 16px', fontSize: 14, fontWeight: 600, color: reported[post.id] ? 'rgba(255,255,255,0.3)' : '#FF5DAA', background: 'none', border: 'none', cursor: reported[post.id] ? 'default' : 'pointer', textAlign: 'left' }}
                         onClick={handleReport}
                         disabled={reported[post.id]}
                       >{reported[post.id] ? '通報済み' : '通報する'}</button>
@@ -1370,58 +1405,27 @@ export default function FeedPage() {
         )}
       </main>
 
-      {isFeed && post && (
+      {isFeed && post && post.posiCount < post.target && (
         <div style={S.bottomFixed}>
-          <div style={S.indicator}>
-            <span
-              className={remaining <= 50 ? 'indicator-blink' : ''}
-              style={{ ...S.indicatorLabel, display: 'block', marginBottom: 8 }}
-            >
-              {remaining <= 10 ? `🎆 もうすぐ花火！あと${remaining.toLocaleString()}` : `🎆 あと${remaining.toLocaleString()}`}
-            </span>
-            <div style={S.bar}>
-              <div style={{ ...S.barFill, width: `${progress}%`, ...(remaining <= 100 ? { background: '#e53935' } : {}) }} />
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <button
-              className={popping ? 'posi-pop' : shaking ? 'posi-shake' : ''}
-              style={{ ...S.posiBtn, ...(hasSent ? S.posiBtnSent : cheerEnergy <= 0 ? S.posiBtnNoEnergy : {}) }}
-              onMouseDown={posiDown}
-              onMouseUp={posiUp}
-              onTouchStart={posiDown}
-              onTouchEnd={posiUp}
-            >
-              <span style={{ fontSize: 24 }}>{emoji}</span>
-              <span>POSI.</span>
-              <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 600 }}>{post.posiCount.toLocaleString()}</span>
-            </button>
-
-            {pickerOpen && (
-              <div style={S.picker}>
-                {emojis.map(e => (
-                  <button key={e} style={S.pickerEmoji} onClick={() => pickEmoji(e)}>{e}</button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {post && post.posiCount < post.target && (
-            <button
-              style={{ ...S.msgBtn, ...(hasSentMsg ? S.msgBtnSent : {}) }}
-              disabled={hasSentMsg}
-              onClick={() => !hasSentMsg && setMsgModalOpen(true)}
-            >
-              {hasSentMsg ? '✉️ 送信済み ✓' : '✉️ 応援メッセージを送る'}
-            </button>
-          )}
+          <button
+            style={{ ...S.msgBtn, ...(hasSentMsg ? S.msgBtnSent : {}) }}
+            disabled={hasSentMsg}
+            onClick={() => !hasSentMsg && setMsgModalOpen(true)}
+          >
+            {hasSentMsg ? '✉️ 送信済み ✓' : '✉️ 応援メッセージを送る'}
+          </button>
         </div>
       )}
 
-      <div style={S.cheersMeter}>⚡ {cheerEnergy} / 15</div>
+      <div style={S.cheersMeter}>
+        <span style={{ fontSize: 14, color: '#FFC857', fontWeight: 800 }}>⚡</span>
+        <div style={S.staminaBarWrap}>
+          <div style={{ ...S.staminaBarFill, width: `${(cheerEnergy / 15) * 100}%` }} />
+        </div>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, flexShrink: 0 }}>{cheerEnergy}/15</span>
+      </div>
 
-      <nav style={{ ...S.nav, borderTop: 'none' }}>
+      <nav style={S.nav}>
         {navTab('home', IconHome)}
         {navTab('cheers', IconCheers)}
         <button style={S.postTab} onClick={() => setActiveTab('post')}>
@@ -1451,7 +1455,7 @@ export default function FeedPage() {
                 top: `${12 + (i * 18) % 64}%`,
                 fontSize: 16,
                 fontWeight: 700,
-                color: msg.own ? '#f5601e' : '#fff',
+                color: msg.own ? '#FF5DAA' : '#fff',
                 opacity: msg.own ? 1 : 0.85,
                 whiteSpace: 'nowrap',
                 textShadow: '0 1px 4px rgba(0,0,0,0.8)',
@@ -1691,14 +1695,14 @@ export default function FeedPage() {
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {[['🎆','花火'],['🏮','ランタン'],['☄️','流星群'],['🦋','光の蝶'],['🎈','風船']].map(([e, label]) => (
                   <button key={e} onClick={() => setAchieveEffect(e)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: achieveEffect === e ? 'rgba(245,96,30,0.25)' : 'rgba(255,255,255,0.08)', border: achieveEffect === e ? '2px solid #f5601e' : '2px solid transparent', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}>
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: achieveEffect === e ? 'rgba(255,93,170,0.25)' : 'rgba(255,255,255,0.08)', border: achieveEffect === e ? '2px solid #FF5DAA' : '2px solid transparent', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}>
                     <span style={{ fontSize: 32 }}>{e}</span>
                     <span style={{ fontSize: 11, color: '#fff', fontWeight: 600 }}>{label}</span>
                   </button>
                 ))}
               </div>
               <button onClick={() => setAchieveStep(2)}
-                style={{ width: '100%', background: '#f5601e', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', marginTop: 8 }}>
+                style={{ width: '100%', background: '#FF5DAA', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', marginTop: 8 }}>
                 次へ →
               </button>
             </div>
@@ -1730,7 +1734,7 @@ export default function FeedPage() {
                     <div style={{ display: 'flex', gap: 6 }}>
                       {opts.map(([v, l]) => (
                         <button key={v} onClick={() => setter(v)}
-                          style={{ fontSize: 12, fontWeight: 700, border: val === v ? '2px solid #f5601e' : '2px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '5px 12px', background: val === v ? 'rgba(245,96,30,0.25)' : 'transparent', color: '#fff', cursor: 'pointer' }}>
+                          style={{ fontSize: 12, fontWeight: 700, border: val === v ? '2px solid #FF5DAA' : '2px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '5px 12px', background: val === v ? 'rgba(255,93,170,0.25)' : 'transparent', color: '#fff', cursor: 'pointer' }}>
                           {l}
                         </button>
                       ))}
@@ -1745,7 +1749,7 @@ export default function FeedPage() {
                   スキップ
                 </button>
                 <button onClick={() => setAchieveStep(3)}
-                  style={{ flex: 2, background: '#f5601e', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer' }}>
+                  style={{ flex: 2, background: '#FF5DAA', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer' }}>
                   打ち上げる！
                 </button>
               </div>
@@ -1756,7 +1760,7 @@ export default function FeedPage() {
           {achieveStep === 3 && (() => {
             const bgMap = { '🎆': '#000', '🏮': '#05031a', '☄️': '#000', '🦋': '#1a0a2e', '🎈': '#87ceeb' }
             const videoMap = { '🎆': '/videos/hanabi.mp4', '🏮': '/videos/rantan.mp4', '☄️': '/videos/ryusei.mp4', '🦋': '/videos/tyoutyou.mp4' }
-            const msgColorMap = { white: '#fff', orange: '#f5601e', gold: '#ffd700' }
+            const msgColorMap = { white: '#fff', orange: '#FF5DAA', gold: '#ffd700' }
             const msgSizeMap = { large: 22, mid: 16, small: 12 }
             const msgPosStyle = { top: { top: '12%' }, mid: { top: '45%', transform: 'translateY(-50%)' }, bot: { bottom: '22%' } }
             const videoSrc = videoMap[achieveEffect]
@@ -1780,7 +1784,7 @@ export default function FeedPage() {
 
                 {/* 流れるメッセージ */}
                 {achieveMessages.map((msg, i) => (
-                  <div key={msg.id} style={{ position: 'absolute', top: `${14 + i * 13}%`, fontSize: 15, fontWeight: 700, color: msg.own ? '#f5601e' : '#fff', opacity: msg.own ? 1 : 0.85, whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.8)', animation: `scrollAchieve ${7 + i * 1.5}s ${i * 1.2}s linear infinite`, zIndex: 10, pointerEvents: 'none', ...(msg.own ? { animationName: 'scrollAchieve, achMsgBlink' } : {}) }}>
+                  <div key={msg.id} style={{ position: 'absolute', top: `${14 + i * 13}%`, fontSize: 15, fontWeight: 700, color: msg.own ? '#FF5DAA' : '#fff', opacity: msg.own ? 1 : 0.85, whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.8)', animation: `scrollAchieve ${7 + i * 1.5}s ${i * 1.2}s linear infinite`, zIndex: 10, pointerEvents: 'none', ...(msg.own ? { animationName: 'scrollAchieve, achMsgBlink' } : {}) }}>
                     {msg.text}
                   </div>
                 ))}
@@ -1795,7 +1799,7 @@ export default function FeedPage() {
                 {/* 下部：達成者情報 */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent,rgba(0,0,0,0.8))', padding: '32px 20px 24px', zIndex: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f5601e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, flexShrink: 0 }}>{achieveModal.post.initials}</div>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FF5DAA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 900, flexShrink: 0 }}>{achieveModal.post.initials}</div>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{achieveModal.post.author}</div>
                       <div style={{ fontSize: 12, color: '#aaa' }}>1,000 Posi達成！🎉</div>
@@ -2039,179 +2043,200 @@ export default function FeedPage() {
 }
 
 const S = {
-  root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', maxWidth: 480, margin: '0 auto' },
-  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: 'var(--orange)', flexShrink: 0 },
+  root: { display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0B1020', maxWidth: 480, margin: '0 auto' },
+  header: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: '#0B1020', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   logo: { fontSize: 33, fontWeight: 900, color: '#fff', letterSpacing: '1px' },
   bellBtn: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  bellBadge: { position: 'absolute', top: 0, right: 0, background: '#e53935', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', lineHeight: 1 },
+  bellBadge: { position: 'absolute', top: 0, right: 0, background: '#FF5DAA', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', lineHeight: 1 },
   notifOverlay: { position: 'fixed', inset: 0, zIndex: 49, background: 'transparent' },
-  notifDrawer: { position: 'fixed', top: 60, right: 0, left: 0, maxWidth: 480, margin: '0 auto', background: 'var(--card-bg)', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', zIndex: 50, animation: 'notifSlideDown 0.25s cubic-bezier(0.34,1.0,0.64,1)', maxHeight: '70vh', display: 'flex', flexDirection: 'column' },
-  notifHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '0.5px solid var(--card-border)' },
-  notifTitle: { fontSize: 16, fontWeight: 800, color: 'var(--text)' },
-  notifClose: { background: 'none', border: 'none', fontSize: 16, color: 'var(--text-sub)', cursor: 'pointer', padding: 4 },
+  notifDrawer: { position: 'fixed', top: 60, right: 0, left: 0, maxWidth: 480, margin: '0 auto', background: '#121A33', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 50, animation: 'notifSlideDown 0.25s cubic-bezier(0.34,1.0,0.64,1)', maxHeight: '70vh', display: 'flex', flexDirection: 'column' },
+  notifHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  notifTitle: { fontSize: 16, fontWeight: 800, color: '#fff' },
+  notifClose: { background: 'none', border: 'none', fontSize: 16, color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: 4 },
   notifList: { overflowY: 'auto', flex: 1 },
-  notifEmpty: { padding: '32px 18px', textAlign: 'center', color: 'var(--text-sub)', fontSize: 14 },
-  notifItem: { position: 'relative', padding: '13px 18px', borderBottom: '0.5px solid var(--card-border)', cursor: 'pointer' },
-  notifItemRead: { opacity: 0.5 },
-  notifItemTitle: { fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 },
-  notifItemBody: { fontSize: 12, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 },
-  notifUnreadDot: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: 'var(--orange)' },
+  notifEmpty: { padding: '32px 18px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14 },
+  notifItem: { position: 'relative', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' },
+  notifItemRead: { opacity: 0.4 },
+  notifItemTitle: { fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.4 },
+  notifItemBody: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 3, lineHeight: 1.4 },
+  notifUnreadDot: { position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#FF5DAA' },
 
-  soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: '#f5601e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px' },
+  soonBanner: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', height: 36, background: 'linear-gradient(90deg, #FF5DAA, #8A7DFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', cursor: 'pointer', zIndex: 3, letterSpacing: '0.5px', borderRadius: '0 0 10px 10px' },
   main: { flex: 1, position: 'relative', overflow: 'hidden' },
   empty: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 },
 
-  screen: { position: 'fixed', top: 130, bottom: 295, left: 0, right: 0, maxWidth: 480, margin: '0 auto', zIndex: 1, cursor: 'grab', willChange: 'transform', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px 24px', overflow: 'hidden' },
-  centerWrap: { width: '100%' },
+  screen: { position: 'fixed', top: 60, bottom: 156, left: 0, right: 0, maxWidth: 480, margin: '0 auto', zIndex: 1, cursor: 'grab', willChange: 'transform', padding: '8px 12px 8px' },
+  centerWrap: { width: '100%', height: '100%' },
 
-  authorFixed: { position: 'fixed', top: 60, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', zIndex: 2 },
+  authorFixed: { display: 'none' },
   authorRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  avatar: { width: 46, height: 46, borderRadius: '50%', background: 'var(--orange-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'var(--orange)', fontWeight: 800, flexShrink: 0, border: '2px solid var(--orange-border)' },
-  authorName: { fontSize: 17, fontWeight: 700, color: 'var(--text)' },
-  authorTime: { fontSize: 13, color: 'var(--text-sub)', marginTop: 1 },
+  avatar: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#fff', fontWeight: 800, flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.3)' },
+  authorName: { fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)' },
+  authorTime: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
 
-  mainCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(255,107,53,0.10)', position: 'relative' },
+  // Card - full-bg design
+  mainCard: { width: '100%', height: '100%', borderRadius: 20, overflow: 'hidden', position: 'relative', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' },
+  cardBgPhoto: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, display: 'block' },
+  cardBgNoPhoto: { position: 'absolute', inset: 0, background: '#121A33', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 0 },
+  cardBgEmoji: { fontSize: 140, opacity: 0.1, userSelect: 'none', pointerEvents: 'none' },
+  cardOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(11,16,32,0.97) 0%, rgba(11,16,32,0.25) 55%, transparent 100%)', zIndex: 1 },
+  cardContent: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '16px 16px 18px', gap: 10, zIndex: 2 },
+  cardUserRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  cardAvatar: { width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#fff', fontWeight: 800, flexShrink: 0 },
+  cardAuthorName: { fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)' },
+  cardPostText: { fontWeight: 700, color: '#ffffff', lineHeight: 1.5, margin: 0 },
+  cardProgressWrap: { display: 'flex', flexDirection: 'column', gap: 5 },
+  cardBar: { height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' },
+  cardBarFill: { height: '100%', background: 'linear-gradient(90deg, #FF5DAA, #8A7DFF)', borderRadius: 99, transition: 'width 0.3s ease' },
+  cardProgressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 },
+  cardBottomRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  cardPosiersLeft: { display: 'flex', alignItems: 'center', gap: 8 },
+  cardPosiCount: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 },
+
+  // legacy (post modal / preview still uses these)
   photoArea: { overflow: 'hidden', maxHeight: '45vh' },
   photoAreaNoPhoto: { height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   photo: { width: '100%', height: '100%', maxHeight: '45vh', objectFit: 'cover', display: 'block' },
-  textArea: { background: '#fff', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  postText: { fontWeight: 700, lineHeight: 1.5, color: 'var(--text)', textAlign: 'center' },
+  textArea: { background: '#121A33', padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  postText: { fontWeight: 700, lineHeight: 1.5, color: '#fff', textAlign: 'center' },
 
   floatingEmoji: { position: 'absolute', bottom: 90, fontSize: 36, zIndex: 10, pointerEvents: 'none' },
 
-  bottomFixed: { position: 'fixed', bottom: 90, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 12px', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 20 },
-  indicator: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 16px' },
-  indicatorLabel: { fontSize: 15, color: 'var(--orange)', fontWeight: 700 },
-  bar: { height: 6, background: 'rgba(255,107,53,0.15)', borderRadius: 99, overflow: 'hidden' },
-  barFill: { height: '100%', background: 'var(--orange)', borderRadius: 99, transition: 'width 0.3s ease' },
+  bottomFixed: { position: 'fixed', bottom: 108, left: 0, right: 0, maxWidth: 480, margin: '0 auto', padding: '0 16px 8px', zIndex: 20 },
 
-  posiBtn: { width: '100%', background: 'var(--orange-dark)', border: 'none', borderRadius: 9999, padding: '23px', fontSize: 20, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(217,79,26,0.45)', letterSpacing: '0.5px' },
-  posiBtnSent: { background: '#ccc', boxShadow: 'none', cursor: 'default' },
-  posiBtnNoEnergy: { background: '#ccc', boxShadow: 'none', cursor: 'not-allowed' },
-  cheersMeter: { textAlign: 'center', padding: '5px 0 4px', fontSize: 13, fontWeight: 800, color: 'var(--text-sub)', background: 'var(--card-bg)', borderTop: '0.5px solid var(--card-border)', flexShrink: 0 },
-  picker: { position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-bg)', border: '0.5px solid var(--card-border)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' },
+  // POSI button - circular gradient
+  posiBtn: { width: 68, height: 68, borderRadius: '50%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, boxShadow: '0 4px 20px rgba(255,93,170,0.55)', flexShrink: 0 },
+  posiBtnSent: { background: 'rgba(255,255,255,0.15)', boxShadow: 'none', cursor: 'default' },
+  posiBtnNoEnergy: { background: 'rgba(255,255,255,0.08)', boxShadow: 'none', cursor: 'not-allowed' },
+
+  // Stamina meter
+  cheersMeter: { background: '#0B1020', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, height: 44 },
+  staminaBarWrap: { flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 99, overflow: 'hidden' },
+  staminaBarFill: { height: '100%', background: 'linear-gradient(90deg, #FFC857, #FF5DAA)', borderRadius: 99, transition: 'width 0.3s ease' },
+
+  picker: { position: 'absolute', bottom: 'calc(100% + 10px)', right: 0, background: '#121A33', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 12, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' },
   pickerEmoji: { fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 },
 
-  lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   lightboxImg: { maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain' },
-  lightboxClose: { position: 'fixed', top: 16, right: 16, zIndex: 101, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', fontSize: 20, fontWeight: 700, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  lightboxClose: { position: 'fixed', top: 16, right: 16, zIndex: 101, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', fontSize: 20, fontWeight: 700, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 
-  nav: { display: 'flex', alignItems: 'center', height: 64, borderTop: '0.5px solid var(--card-border)', background: 'var(--card-bg)', flexShrink: 0 },
+  nav: { display: 'flex', alignItems: 'center', height: 64, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#0B1020', flexShrink: 0 },
   navTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 },
-  navTabActive: { background: 'var(--orange-tint)', color: 'var(--orange)' },
-  navLabel: { fontSize: 10, fontWeight: 500, color: 'var(--text-sub)' },
+  navTabActive: { background: 'transparent' },
+  navLabel: { fontSize: 10, fontWeight: 500 },
 
   profileScroll: { padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 },
-  profileCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '20px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 },
-  profileAvatar: { width: 64, height: 64, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#fff', fontWeight: 900, marginBottom: 4 },
-  profileName: { fontSize: 18, fontWeight: 700, color: 'var(--text)' },
-  profileHandle: { fontSize: 13, color: 'var(--text-sub)' },
+  profileCard: { background: '#121A33', borderRadius: 16, padding: '20px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 },
+  profileAvatar: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: '#fff', fontWeight: 900, marginBottom: 4 },
+  profileName: { fontSize: 18, fontWeight: 700, color: '#fff' },
+  profileHandle: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
   profileStats: { display: 'flex', gap: 24, marginTop: 8, alignItems: 'center' },
   profileStat: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  profileStatNum: { fontSize: 18, fontWeight: 700, color: 'var(--text)' },
-  profileStatLabel: { fontSize: 11, color: 'var(--text-sub)' },
-  profileStatDivider: { width: 1, height: 28, background: 'var(--card-border)' },
+  profileStatNum: { fontSize: 18, fontWeight: 700, color: '#fff' },
+  profileStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
+  profileStatDivider: { width: 1, height: 28, background: 'rgba(255,255,255,0.1)' },
 
-  posiCountCard: { background: 'var(--card-bg)', borderRadius: 16, padding: '14px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  posiCountLabel: { fontSize: 12, color: 'var(--text-sub)', marginBottom: 4 },
-  posiCountNum: { fontSize: 32, fontWeight: 900, color: 'var(--orange)' },
-  posiCountIcon: { width: 48, height: 48, borderRadius: 12, background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 },
+  posiCountCard: { background: '#121A33', borderRadius: 16, padding: '14px 16px', boxShadow: '0 2px 16px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  posiCountLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 4 },
+  posiCountNum: { fontSize: 32, fontWeight: 900, color: '#FF5DAA' },
+  posiCountIcon: { width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 },
 
   sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px' },
-  sectionTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
-  sectionAction: { fontSize: 13, fontWeight: 600, color: 'var(--orange)', cursor: 'pointer' },
+  sectionTitle: { fontSize: 13, fontWeight: 700, color: '#fff' },
+  sectionAction: { fontSize: 13, fontWeight: 600, color: '#FF5DAA', cursor: 'pointer' },
 
-  goalCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', borderLeft: '3px solid var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  goalCardDone: { borderLeft: '3px solid #ccc', background: '#fafafa' },
-  achievedBadge: { fontSize: 11, fontWeight: 700, color: '#2e7d32', background: '#e8f5e9', borderRadius: 99, padding: '3px 8px', flexShrink: 0 },
-  addGoalBtn: { background: 'none', border: '1.5px dashed var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 13, color: 'var(--text-sub)', cursor: 'pointer', width: '100%', textAlign: 'center' },
+  goalCard: { background: '#121A33', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.3)', borderLeft: '3px solid #FF5DAA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  goalCardDone: { borderLeft: '3px solid rgba(255,255,255,0.15)', opacity: 0.5 },
+  achievedBadge: { fontSize: 11, fontWeight: 700, color: '#6EF3D6', background: 'rgba(110,243,214,0.12)', borderRadius: 99, padding: '3px 8px', flexShrink: 0 },
+  addGoalBtn: { background: 'none', border: '1.5px dashed rgba(255,255,255,0.12)', borderRadius: 12, padding: '12px', fontSize: 13, color: 'rgba(255,255,255,0.4)', cursor: 'pointer', width: '100%', textAlign: 'center' },
 
-  recentPostCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+  recentPostCard: { background: '#121A33', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.3)' },
   postTab: { flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  postInner: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange)', color: '#fff', fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(255,107,53,0.4)' },
+  postInner: { width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', color: '#fff', fontSize: 26, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(255,93,170,0.5)', marginBottom: 10 },
 
   // Cheers screen
-  todayBadge: { fontSize: 11, background: 'var(--orange)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontWeight: 700 },
+  todayBadge: { fontSize: 11, background: 'linear-gradient(90deg, #FF5DAA, #8A7DFF)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontWeight: 700 },
   hscrollWrap: { display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' },
-  fireworkCard: { minWidth: 130, background: '#1a1a2e', borderRadius: 20, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 },
+  fireworkCard: { minWidth: 130, background: '#121A33', borderRadius: 20, padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0, border: '1px solid rgba(255,255,255,0.06)' },
   fireworkCardExpired: { opacity: 0.4 },
-  fwAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 800, marginTop: 8 },
-  inviteBtn: { fontSize: 13, fontWeight: 700, color: 'var(--orange)', background: 'var(--orange-tint)', border: '1px solid var(--orange-border)', borderRadius: 99, padding: '5px 12px', cursor: 'pointer' },
-  friendRow: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+  fwAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 800, marginTop: 8 },
+  inviteBtn: { fontSize: 13, fontWeight: 700, color: '#FF5DAA', background: 'rgba(255,93,170,0.1)', border: '1px solid rgba(255,93,170,0.3)', borderRadius: 99, padding: '5px 12px', cursor: 'pointer' },
+  friendRow: { background: '#121A33', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', boxShadow: '0 1px 6px rgba(0,0,0,0.3)' },
   friendRowAvatar: { width: 42, height: 42, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#fff', fontWeight: 800, flexShrink: 0 },
-  inviteOptionBtn: { display: 'block', width: '100%', background: 'var(--card-bg)', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, color: 'var(--text)', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
+  inviteOptionBtn: { display: 'block', width: '100%', background: '#121A33', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
   friendItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 },
-  friendAvatar: { width: 48, height: 48, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--orange)', fontWeight: 800 },
-  friendInviteBtn: { width: 48, height: 48, borderRadius: '50%', background: 'var(--card-bg)', border: '2px dashed var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'var(--text-sub)', cursor: 'pointer' },
-  friendName: { fontSize: 11, color: 'var(--text-sub)', fontWeight: 500 },
-  historyCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  achievedHistCard: { background: 'var(--card-bg)', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', borderLeft: '3px solid var(--orange)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  histAvatar: { width: 38, height: 38, borderRadius: '50%', background: 'var(--orange-tint)', border: '2px solid var(--orange-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--orange)', fontWeight: 800, flexShrink: 0 },
-  moreBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--orange)', fontWeight: 700, cursor: 'pointer', textAlign: 'right', padding: '4px 0', alignSelf: 'flex-end' },
-  backBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--text-sub)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '4px 0' },
-  emptyState: { fontSize: 13, color: 'var(--text-sub)', textAlign: 'center', padding: '20px 0' },
-  settingRow: { background: 'var(--card-bg)', borderRadius: 12, padding: '14px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  friendAvatar: { width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,93,170,0.12)', border: '2px solid rgba(255,93,170,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#FF5DAA', fontWeight: 800 },
+  friendInviteBtn: { width: 48, height: 48, borderRadius: '50%', background: '#121A33', border: '2px dashed rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'rgba(255,255,255,0.3)', cursor: 'pointer' },
+  friendName: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500 },
+  historyCard: { background: '#121A33', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
+  achievedHistCard: { background: '#121A33', borderRadius: 12, padding: '12px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.3)', borderLeft: '3px solid #FF5DAA', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
+  histAvatar: { width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,93,170,0.12)', border: '2px solid rgba(255,93,170,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#FF5DAA', fontWeight: 800, flexShrink: 0 },
+  moreBtn: { background: 'none', border: 'none', fontSize: 13, color: '#FF5DAA', fontWeight: 700, cursor: 'pointer', textAlign: 'right', padding: '4px 0', alignSelf: 'flex-end' },
+  backBtn: { background: 'none', border: 'none', fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '4px 0' },
+  emptyState: { fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '20px 0' },
+  settingRow: { background: '#121A33', borderRadius: 12, padding: '14px 14px', boxShadow: '0 1px 6px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   notifToggleGroup: { display: 'flex', gap: 4 },
-  notifToggleBtn: { fontSize: 11, fontWeight: 600, border: '1px solid var(--card-border)', borderRadius: 99, padding: '5px 10px', background: 'none', color: 'var(--text-sub)', cursor: 'pointer' },
-  notifToggleBtnActive: { background: 'var(--orange)', borderColor: 'var(--orange)', color: '#fff' },
+  notifToggleBtn: { fontSize: 11, fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)', borderRadius: 99, padding: '5px 10px', background: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' },
+  notifToggleBtnActive: { background: '#FF5DAA', borderColor: '#FF5DAA', color: '#fff' },
 
   // 応援メッセージ
-  msgBtn: { width: '100%', background: 'var(--card-bg)', border: '1px solid var(--orange-border)', borderRadius: 9999, padding: '10px 14px', fontSize: 12, fontWeight: 600, color: 'var(--orange)', cursor: 'pointer', textAlign: 'center' },
-  msgBtnSent: { background: '#f5f5f5', borderColor: 'var(--card-border)', color: 'var(--text-sub)', cursor: 'default' },
-  msgOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 110, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
-  msgSheet: { background: 'var(--card-bg)', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 },
-  msgInput: { flex: 1, border: '1.5px solid var(--card-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', fontFamily: 'inherit' },
-  msgSendBtn: { background: 'var(--orange)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 },
-  toast: { position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#1a1a2e', color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', borderRadius: 99, zIndex: 200, whiteSpace: 'nowrap' },
+  msgBtn: { width: '100%', background: 'rgba(18,26,51,0.85)', border: '1px solid rgba(138,125,255,0.4)', borderRadius: 9999, padding: '10px 14px', fontSize: 12, fontWeight: 600, color: '#8A7DFF', cursor: 'pointer', textAlign: 'center', backdropFilter: 'blur(8px)' },
+  msgBtnSent: { background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'default' },
+  msgOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 110, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
+  msgSheet: { background: '#121A33', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 },
+  msgInput: { flex: 1, border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '10px 12px', fontSize: 14, outline: 'none', fontFamily: 'inherit', background: 'rgba(255,255,255,0.05)', color: '#fff' },
+  msgSendBtn: { background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 },
+  toast: { position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#121A33', color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', borderRadius: 99, zIndex: 200, whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' },
 
   // 投稿画面
-  postScreenOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
-  postScreenHeader: { padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid var(--card-border)', background: 'var(--bg)', flexShrink: 0 },
-  postScreenClose: { width: 40, height: 40, background: 'none', border: 'none', fontSize: 24, fontWeight: 700, color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  postScreenTitle: { fontSize: 16, fontWeight: 700, color: 'var(--text)' },
+  postScreenOverlay: { position: 'fixed', inset: 0, background: '#0B1020', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
+  postScreenHeader: { padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0B1020', flexShrink: 0 },
+  postScreenClose: { width: 40, height: 40, background: 'none', border: 'none', fontSize: 24, fontWeight: 700, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  postScreenTitle: { fontSize: 16, fontWeight: 700, color: '#fff' },
   postScreenBody: { flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 14 },
   postTextWrap: { position: 'relative' },
-  postTextarea: { width: '100%', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 15, lineHeight: 1.6, fontFamily: 'inherit', outline: 'none', resize: 'none', background: 'var(--card-bg)', color: 'var(--text)', boxSizing: 'border-box' },
-  postCharCount: { textAlign: 'right', fontSize: 11, color: 'var(--text-sub)', marginTop: 4 },
-  photoAddBtn: { width: '100%', background: 'var(--card-bg)', border: '1.5px dashed var(--card-border)', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer' },
+  postTextarea: { width: '100%', border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '12px', fontSize: 15, lineHeight: 1.6, fontFamily: 'inherit', outline: 'none', resize: 'none', background: '#121A33', color: '#fff', boxSizing: 'border-box' },
+  postCharCount: { textAlign: 'right', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 },
+  photoAddBtn: { width: '100%', background: '#121A33', border: '1.5px dashed rgba(255,255,255,0.12)', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.45)', cursor: 'pointer' },
   patternSection: { display: 'flex', flexDirection: 'column', gap: 8 },
-  patternLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
+  patternLabel: { fontSize: 13, fontWeight: 700, color: '#fff' },
   patternScroll: { display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' },
   patternItem: { minWidth: 90, height: 52, borderRadius: 10, border: '2.5px solid transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px' },
-  patternItemSelected: { border: '2.5px solid var(--orange)', boxShadow: '0 0 0 2px rgba(255,107,53,0.3)' },
-  previewLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text)' },
-  previewCard: { borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(255,107,53,0.1)' },
+  patternItemSelected: { border: '2.5px solid #FF5DAA', boxShadow: '0 0 0 2px rgba(255,93,170,0.3)' },
+  previewLabel: { fontSize: 13, fontWeight: 700, color: '#fff' },
+  previewCard: { borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' },
   removePhotoBtn: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  submitPostBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
-  submitPostBtnDisabled: { background: '#ccc', boxShadow: 'none', cursor: 'not-allowed' },
+  submitPostBtn: { width: '100%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,93,170,0.35)' },
+  submitPostBtnDisabled: { background: 'rgba(255,255,255,0.12)', boxShadow: 'none', cursor: 'not-allowed' },
   postDoneScreen: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
-  postDoneText: { fontSize: 28, fontWeight: 900, color: 'var(--orange)', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative', textAlign: 'center', marginBottom: 4 },
-  shareBtn: { display: 'block', width: '100%', background: '#1a1a2e', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
+  postDoneText: { fontSize: 28, fontWeight: 900, color: '#FF5DAA', animation: 'postDoneIn 0.4s ease-out forwards', zIndex: 320, position: 'relative', textAlign: 'center', marginBottom: 4 },
+  shareBtn: { display: 'block', width: '100%', background: '#121A33', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', boxSizing: 'border-box' },
 
-  authOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 450, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
-  authHeader: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--orange)', flexShrink: 0 },
+  authOverlay: { position: 'fixed', inset: 0, background: '#0B1020', zIndex: 450, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' },
+  authHeader: { padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B1020', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   authBody: { flex: 1, display: 'flex', flexDirection: 'column', padding: '32px 24px', gap: 14, overflowY: 'auto' },
-  authTitle: { fontSize: 24, fontWeight: 900, color: 'var(--text)', textAlign: 'center', marginBottom: 4 },
-  authInput: { width: '100%', border: '1.5px solid var(--card-border)', borderRadius: 12, padding: '14px', fontSize: 15, fontFamily: 'inherit', outline: 'none', background: 'var(--card-bg)', color: 'var(--text)', boxSizing: 'border-box' },
-  googleBtn: { width: '100%', background: '#fff', border: '1.5px solid var(--card-border)', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
-  emailRegisterBtn: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
-  authLinkBtn: { background: 'none', border: 'none', fontSize: 13, color: 'var(--orange)', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'underline', padding: '4px 0' },
-  authBack: { background: 'none', border: 'none', fontSize: 14, color: 'var(--text-sub)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '0 0 8px' },
-  authError: { fontSize: 13, color: '#e53935', fontWeight: 600, textAlign: 'center', background: '#ffebee', borderRadius: 8, padding: '10px 14px' },
+  authTitle: { fontSize: 24, fontWeight: 900, color: '#fff', textAlign: 'center', marginBottom: 4 },
+  authInput: { width: '100%', border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '14px', fontSize: 15, fontFamily: 'inherit', outline: 'none', background: '#121A33', color: '#fff', boxSizing: 'border-box' },
+  googleBtn: { width: '100%', background: '#fff', border: 'none', borderRadius: 9999, padding: '14px', fontSize: 15, fontWeight: 700, color: '#333', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' },
+  emailRegisterBtn: { width: '100%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 16, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,93,170,0.35)' },
+  authLinkBtn: { background: 'none', border: 'none', fontSize: 13, color: '#8A7DFF', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'underline', padding: '4px 0' },
+  authBack: { background: 'none', border: 'none', fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 600, cursor: 'pointer', textAlign: 'left', padding: '0 0 8px' },
+  authError: { fontSize: 13, color: '#FF5DAA', fontWeight: 600, textAlign: 'center', background: 'rgba(255,93,170,0.1)', borderRadius: 8, padding: '10px 14px' },
 
-  onboardOverlay: { position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', maxWidth: 480, margin: '0 auto', padding: '0 32px 40px' },
-  onboardSkip: { position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer' },
+  onboardOverlay: { position: 'fixed', inset: 0, background: '#0B1020', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', maxWidth: 480, margin: '0 auto', padding: '0 32px 40px' },
+  onboardSkip: { position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.4)', cursor: 'pointer' },
   onboardSlide: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: 1, justifyContent: 'center' },
-  onboardTitle: { fontSize: 22, fontWeight: 900, color: 'var(--text)', lineHeight: 1.4, marginBottom: 12, whiteSpace: 'pre-line' },
-  onboardSub: { fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, whiteSpace: 'pre-line' },
+  onboardTitle: { fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.4, marginBottom: 12, whiteSpace: 'pre-line' },
+  onboardSub: { fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, whiteSpace: 'pre-line' },
   onboardDots: { display: 'flex', gap: 8, marginBottom: 24 },
-  onboardDot: { width: 8, height: 8, borderRadius: '50%', background: 'var(--card-border)', cursor: 'pointer' },
-  onboardDotActive: { background: 'var(--orange)', width: 20, borderRadius: 99 },
-  onboardNext: { width: '100%', background: 'var(--orange)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(217,79,26,0.35)' },
+  onboardDot: { width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', cursor: 'pointer' },
+  onboardDotActive: { background: '#FF5DAA', width: 20, borderRadius: 99 },
+  onboardNext: { width: '100%', background: 'linear-gradient(135deg, #FF5DAA, #8A7DFF)', border: 'none', borderRadius: 9999, padding: '16px', fontSize: 17, fontWeight: 900, color: '#fff', cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,93,170,0.35)' },
 
   // モーダル
   fwOverlay: { position: 'fixed', inset: 0, background: 'rgba(10,10,30,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   fwModalContent: { padding: '32px 24px', maxWidth: 320, width: '100%' },
-  postOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' },
-  postModalCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' },
+  postOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' },
+  postModalCard: { width: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' },
 }
